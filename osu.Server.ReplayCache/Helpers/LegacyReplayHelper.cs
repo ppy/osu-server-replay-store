@@ -11,7 +11,7 @@ namespace osu.Server.ReplayCache.Helpers
     {
         private const int default_replay_version = 20151228;
 
-        public static Stream WriteReplayWithHeader(byte[] frameData, ushort rulesetId, int? scoreVersion, high_score score, user user, osu_beatmap beatmap)
+        public static Stream WriteReplayWithHeader(byte[] frameData, ushort rulesetId, int? scoreVersion, HighScore score, User user, OsuBeatmap beatmap)
         {
             var memoryStream = new MemoryStream();
 

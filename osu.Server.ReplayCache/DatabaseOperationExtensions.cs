@@ -10,9 +10,9 @@ namespace osu.Server.ReplayCache
 {
     public static class DatabaseOperationExtensions
     {
-        public static Task<score?> GetScoreAsync(this MySqlConnection db, long scoreId, MySqlTransaction? transaction = null)
+        public static Task<Score?> GetScoreAsync(this MySqlConnection db, long scoreId, MySqlTransaction? transaction = null)
         {
-            return db.QuerySingleOrDefaultAsync<score?>(@"SELECT * FROM `scores` WHERE `id` = @scoreId",
+            return db.QuerySingleOrDefaultAsync<Score?>(@"SELECT * FROM `scores` WHERE `id` = @scoreId",
                 new
                 {
                     scoreId
@@ -20,11 +20,11 @@ namespace osu.Server.ReplayCache
                 transaction: transaction);
         }
 
-        public static Task<high_score?> GetLegacyScoreAsync(this MySqlConnection db, long legacyScoreId, ushort rulesetId, MySqlTransaction? transaction = null)
+        public static Task<HighScore?> GetLegacyScoreAsync(this MySqlConnection db, long legacyScoreId, ushort rulesetId, MySqlTransaction? transaction = null)
         {
             string scoresTable = LegacyRulesetHelper.GetLegacyHighScoreTableFromLegacyId(rulesetId);
 
-            return db.QuerySingleOrDefaultAsync<high_score?>(@$"SELECT * FROM `{scoresTable}` WHERE `score_id` = @legacyScoreId",
+            return db.QuerySingleOrDefaultAsync<HighScore?>(@$"SELECT * FROM `{scoresTable}` WHERE `score_id` = @legacyScoreId",
                 new
                 {
                     legacyScoreId = legacyScoreId
@@ -32,9 +32,9 @@ namespace osu.Server.ReplayCache
                 transaction: transaction);
         }
 
-        public static Task<user?> GetUserAsync(this MySqlConnection db, int userId, MySqlTransaction? transaction = null)
+        public static Task<User?> GetUserAsync(this MySqlConnection db, int userId, MySqlTransaction? transaction = null)
         {
-            return db.QuerySingleOrDefaultAsync<user?>(@"SELECT * FROM `phpbb_users` WHERE `id` = @userId",
+            return db.QuerySingleOrDefaultAsync<User?>(@"SELECT * FROM `phpbb_users` WHERE `id` = @userId",
                 new
                 {
                     userId
@@ -42,9 +42,9 @@ namespace osu.Server.ReplayCache
                 transaction: transaction);
         }
 
-        public static Task<osu_beatmap?> GetBeatmapAsync(this MySqlConnection db, int beatmapId, MySqlTransaction? transaction = null)
+        public static Task<OsuBeatmap?> GetBeatmapAsync(this MySqlConnection db, int beatmapId, MySqlTransaction? transaction = null)
         {
-            return db.QuerySingleOrDefaultAsync<osu_beatmap?>(@"SELECT * FROM `osu_beatmaps` WHERE `beatmap_id` = @beatmapId",
+            return db.QuerySingleOrDefaultAsync<OsuBeatmap?>(@"SELECT * FROM `osu_beatmaps` WHERE `beatmap_id` = @beatmapId",
                 new
                 {
                     beatmapId

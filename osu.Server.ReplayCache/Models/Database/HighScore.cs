@@ -5,7 +5,7 @@
 
 namespace osu.Server.ReplayCache.Models.Database
 {
-    public class high_score
+    public class HighScore
     {
         public ulong score_id { get; set; }
 

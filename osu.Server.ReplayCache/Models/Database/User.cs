@@ -5,7 +5,7 @@
 
 namespace osu.Server.ReplayCache.Models.Database
 {
-    public class user
+    public class User
     {
         public string username { get; set; } = null!;
     }

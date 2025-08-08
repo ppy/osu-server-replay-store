@@ -5,8 +5,16 @@
 
 namespace osu.Server.ReplayCache.Models.Database
 {
-    public class osu_beatmap
+    public class Score
     {
-        public string checksum { get; set; } = null!;
+        public ulong id { get; set; }
+
+        public uint user_id { get; set; }
+
+        public uint beatmap_id { get; set; }
+
+        public ushort ruleset_id { get; set; }
+
+        public bool has_replay { get; set; }
     }
 }

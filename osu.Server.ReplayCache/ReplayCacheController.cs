@@ -171,7 +171,7 @@ namespace osu.Server.ReplayCache
             return File(replayWithHeaders, content_type, fileName);
         }
 
-        private async Task<Stream> createLegacyReplayWithHeadersAsync(byte[] frames, ushort rulesetId, high_score legacyScore, MySqlConnection db)
+        private async Task<Stream> createLegacyReplayWithHeadersAsync(byte[] frames, ushort rulesetId, HighScore legacyScore, MySqlConnection db)
         {
             var user = await db.GetUserAsync(legacyScore.user_id);
             Debug.Assert(user != null);
