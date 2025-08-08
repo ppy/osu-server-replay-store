@@ -1,0 +1,209 @@
+﻿// Copyright (c) ppy Pty Ltd <contact@ppy.sh>. Licensed under the MIT Licence.
+// See the LICENCE file in the repository root for full licence text.
+
+using System.Diagnostics;
+using System.Globalization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Distributed;
+using MySqlConnector;
+using osu.Framework.Extensions;
+using osu.Server.QueueProcessor;
+using osu.Server.ReplayCache.Helpers;
+using osu.Server.ReplayCache.Models.Database;
+using osu.Server.ReplayCache.Services;
+using StatsdClient;
+
+namespace osu.Server.ReplayCache
+{
+    public class ReplayCacheController : Controller
+    {
+        private const string content_type = "application/x-osu-replay";
+
+        private readonly IReplayStorage replayStorage;
+        private readonly IDistributedCache distributedCache;
+
+        public ReplayCacheController(IReplayStorage replayStorage, IDistributedCache distributedCache)
+        {
+            this.replayStorage = replayStorage;
+            this.distributedCache = distributedCache;
+        }
+
+        [HttpPut]
+        [Route("replays/{scoreId:long}")]
+        [ProducesResponseType(204)]
+        public async Task<IActionResult> PutReplayAsync(
+            [FromRoute] long scoreId,
+            IFormFile replayFile)
+        {
+            using var db = await DatabaseAccess.GetConnectionAsync();
+
+            var score = await db.GetScoreAsync(scoreId);
+
+            if (score == null)
+                return NotFound();
+
+            using var replayStream = replayFile.OpenReadStream();
+
+            using var memoryStream = new MemoryStream();
+            await replayStream.CopyToAsync(memoryStream);
+
+            byte[] replayBytes = memoryStream.ToArray();
+
+            await replayStorage.StoreReplayAsync(scoreId, score.ruleset_id, legacyScore: false, replayStream);
+
+            await distributedCache.SetAsync(
+                getCacheKey(scoreId, score.ruleset_id, legacyScore: false),
+                replayBytes,
+                new DistributedCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(1),
+                });
+
+            DogStatsd.Increment("replays_uploaded");
+            return NoContent();
+        }
+
+        [HttpPut]
+        [Route("replays/{rulesetId:int}/{legacyScoreId:long}")]
+        [ProducesResponseType(204)]
+        public async Task<IActionResult> PutLegacyReplayAsync(
+            [FromRoute] ushort rulesetId,
+            [FromRoute] long legacyScoreId,
+            IFormFile replayFile)
+        {
+            using var db = await DatabaseAccess.GetConnectionAsync();
+
+            var score = await db.GetLegacyScoreAsync(legacyScoreId, rulesetId);
+
+            if (score == null)
+                return NotFound();
+
+            using var replayStream = replayFile.OpenReadStream();
+
+            using var memoryStream = new MemoryStream();
+            await replayStream.CopyToAsync(memoryStream);
+
+            byte[] replayBytes = memoryStream.ToArray();
+
+            await replayStorage.StoreReplayAsync(legacyScoreId, rulesetId, legacyScore: true, replayStream);
+
+            Stream replayWithHeaders = await createLegacyReplayWithHeadersAsync(
+                replayBytes,
+                rulesetId,
+                score,
+                db);
+
+            await distributedCache.SetAsync(
+                getCacheKey(legacyScoreId, rulesetId, legacyScore: false),
+                await replayWithHeaders.ReadAllRemainingBytesToArrayAsync(),
+                new DistributedCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(1),
+                });
+
+            DogStatsd.Increment("replays_uploaded", tags: ["legacy"]);
+            return NoContent();
+        }
+
+        [HttpGet]
+        [Route("replays/{scoreId:long}")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(404)]
+        public async Task<IActionResult> GetReplayAsync([FromRoute] long scoreId)
+        {
+            using var db = await DatabaseAccess.GetConnectionAsync();
+
+            var score = await db.GetScoreAsync(scoreId);
+
+            if (score == null || !score.has_replay)
+                return NotFound();
+
+            string fileName = createFileName(scoreId, score.beatmap_id, score.ruleset_id, legacyScore: false);
+
+            byte[]? cachedReplay = await distributedCache.GetAsync(getCacheKey(scoreId, score.ruleset_id, legacyScore: false));
+
+            if (cachedReplay != null)
+            {
+                DogStatsd.Increment("replays_downloaded", tags: ["cache"]);
+                return File(cachedReplay, content_type, fileName);
+            }
+
+            var replayStream = await replayStorage.GetReplayStreamAsync(scoreId, score.ruleset_id, legacyScore: false);
+
+            DogStatsd.Increment("replays_downloaded");
+            return File(replayStream, content_type, fileName);
+        }
+
+        [HttpGet]
+        [Route("replays/{rulesetId:int}/{legacyScoreId:long}")]
+        [ProducesResponseType(200)]
+        [ProducesResponseType(404)]
+        public async Task<IActionResult> GetLegacyReplayAsync(
+            [FromRoute] ushort rulesetId,
+            [FromRoute] long legacyScoreId)
+        {
+            using var db = await DatabaseAccess.GetConnectionAsync();
+
+            var score = await db.GetLegacyScoreAsync(legacyScoreId, rulesetId);
+
+            if (score == null || !score.replay)
+                return NotFound();
+
+            string fileName = createFileName(legacyScoreId, (uint)score.beatmap_id, rulesetId, legacyScore: true);
+
+            byte[]? cachedReplay = await distributedCache.GetAsync(getCacheKey(legacyScoreId, rulesetId, legacyScore: true));
+
+            if (cachedReplay != null)
+            {
+                DogStatsd.Increment("replays_downloaded", tags: ["cache", "legacy"]);
+                return File(cachedReplay, content_type, fileName);
+            }
+
+            var replayStream = await replayStorage.GetReplayStreamAsync(legacyScoreId, rulesetId, legacyScore: true);
+
+            var replayWithHeaders = await createLegacyReplayWithHeadersAsync(
+                await replayStream.ReadAllRemainingBytesToArrayAsync(),
+                rulesetId,
+                score,
+                db);
+
+            DogStatsd.Increment("replays_downloaded", tags: ["legacy"]);
+            return File(replayWithHeaders, content_type, fileName);
+        }
+
+        private async Task<Stream> createLegacyReplayWithHeadersAsync(byte[] frames, ushort rulesetId, high_score legacyScore, MySqlConnection db)
+        {
+            var user = await db.GetUserAsync(legacyScore.user_id);
+            Debug.Assert(user != null);
+
+            var beatmap = await db.GetBeatmapAsync(legacyScore.beatmap_id);
+            Debug.Assert(beatmap != null);
+
+            int? scoreVersion = await db.GetLegacyScoreVersionAsync(legacyScore.score_id, rulesetId);
+
+            var replayWithHeaders = LegacyReplayHelper.WriteReplayWithHeader(
+                frames,
+                rulesetId,
+                scoreVersion,
+                legacyScore,
+                user,
+                beatmap);
+
+            return replayWithHeaders;
+        }
+
+        private static string createFileName(long scoreId, uint beatmapId, ushort rulesetId, bool legacyScore)
+        {
+            string ruleset = LegacyRulesetHelper.GetRulesetNameFromLegacyId(rulesetId);
+
+            string replayType = legacyScore ? "replay" : "solo-replay";
+
+            return $"{replayType}-{ruleset}_{beatmapId}_{scoreId}.osr";
+        }
+
+        private static string getCacheKey(long scoreId, ushort rulesetId, bool legacyScore) =>
+            legacyScore
+                ? $"legacy-{rulesetId}_{scoreId}"
+                : scoreId.ToString(CultureInfo.InvariantCulture);
+    }
+}

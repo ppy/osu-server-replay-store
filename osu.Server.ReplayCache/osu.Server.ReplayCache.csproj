@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <!-- Suppress "Missing XML comment for publicly visible type or member" warnings.
+        These are triggered by the <GenerateDocumentationFile> directive above, which is used to make swashbuckle pull xmldocs into swagger api docs. -->
+        <NoWarn>CS1591</NoWarn>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="AWSSDK.S3" Version="3.7.415.10" />
+        <PackageReference Include="Dapper" Version="2.1.66" />
+        <PackageReference Include="Dapper.Contrib" Version="2.0.78" />
+        <PackageReference Include="DogStatsD-CSharp-Client" Version="8.0.0" />
+        <PackageReference Include="JetBrains.Annotations" Version="2025.2.0" />
+        <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="9.0.8" />
+        <PackageReference Include="ppy.osu.Game" Version="2025.618.0" />
+        <PackageReference Include="ppy.osu.Server.OsuQueueProcessor" Version="2025.317.0" />
+        <PackageReference Include="Sentry.AspNetCore" Version="5.14.0" />
+        <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.3" />
+        <PackageReference Include="Swashbuckle.AspNetCore.ReDoc" Version="9.0.3" />
+    </ItemGroup>
+
+</Project>
