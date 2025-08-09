@@ -49,11 +49,7 @@ namespace osu.Server.ReplayCache
                 return NotFound();
 
             using var replayStream = replayFile.OpenReadStream();
-
-            using var memoryStream = new MemoryStream();
-            await replayStream.CopyToAsync(memoryStream);
-
-            byte[] replayBytes = memoryStream.ToArray();
+            byte[] replayBytes = await replayStream.ReadAllRemainingBytesToArrayAsync();
 
             await replayStorage.StoreReplayAsync(scoreId, score.ruleset_id, legacyScore: false, replayStream);
 
@@ -91,11 +87,7 @@ namespace osu.Server.ReplayCache
                 return NotFound();
 
             using var replayStream = replayFile.OpenReadStream();
-
-            using var memoryStream = new MemoryStream();
-            await replayStream.CopyToAsync(memoryStream);
-
-            byte[] replayBytes = memoryStream.ToArray();
+            byte[] replayBytes = await replayStream.ReadAllRemainingBytesToArrayAsync();
 
             await replayStorage.StoreReplayAsync(legacyScoreId, rulesetId, legacyScore: true, replayStream);
 

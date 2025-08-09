@@ -23,7 +23,6 @@ namespace osu.Server.ReplayCache.Services
             string path = getPathToReplay(scoreId, rulesetId, legacyScore);
 
             using var fileStream = File.OpenWrite(path);
-
             await replayData.CopyToAsync(fileStream);
         }
 
