@@ -8,5 +8,7 @@ namespace osu.Server.ReplayCache.Services
         Task StoreReplayAsync(long scoreId, ushort rulesetId, bool legacyScore, Stream replayData);
 
         Task<Stream> GetReplayStreamAsync(long scoreId, ushort rulesetId, bool legacyScore);
+
+        Task DeleteReplayAsync(long scoreId, ushort rulesetId, bool legacyScore);
     }
 }

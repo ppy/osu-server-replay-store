@@ -171,7 +171,51 @@ namespace osu.Server.ReplayCache
             return File(replayWithHeaders, content_type, fileName);
         }
 
-        private async Task<Stream> createLegacyReplayWithHeadersAsync(byte[] frames, ushort rulesetId, HighScore legacyScore, MySqlConnection db)
+        [HttpDelete]
+        [Route("replays/{scoreId:long}")]
+        [ProducesResponseType(204)]
+        [ProducesResponseType(404)]
+        public async Task<IActionResult> DeleteReplayAsync([FromRoute] long scoreId)
+        {
+            using var db = await DatabaseAccess.GetConnectionAsync();
+
+            var score = await db.GetScoreAsync(scoreId);
+
+            if (score == null || !score.has_replay)
+                return NotFound();
+
+            await replayStorage.DeleteReplayAsync(scoreId, score.ruleset_id, legacyScore: false);
+            await distributedCache.RemoveAsync(getCacheKey(scoreId, score.ruleset_id, legacyScore: false));
+
+            DogStatsd.Increment("replays_deleted");
+
+            return NoContent();
+        }
+
+        [HttpDelete]
+        [Route("replays/{rulesetId:int}/{legacyScoreId:long}")]
+        [ProducesResponseType(204)]
+        [ProducesResponseType(404)]
+        public async Task<IActionResult> DeleteLegacyReplayAsync(
+            [FromRoute] ushort rulesetId,
+            [FromRoute] long legacyScoreId)
+        {
+            using var db = await DatabaseAccess.GetConnectionAsync();
+
+            var score = await db.GetLegacyScoreAsync(legacyScoreId, rulesetId);
+
+            if (score == null || !score.replay)
+                return NotFound();
+
+            await replayStorage.DeleteReplayAsync(legacyScoreId, rulesetId, legacyScore: true);
+            await distributedCache.RemoveAsync(getCacheKey(legacyScoreId, rulesetId, legacyScore: true));
+
+            DogStatsd.Increment("replays_deleted", tags: ["legacy"]);
+
+            return NoContent();
+        }
+
+        private static async Task<Stream> createLegacyReplayWithHeadersAsync(byte[] frames, ushort rulesetId, HighScore legacyScore, MySqlConnection db)
         {
             var user = await db.GetUserAsync(legacyScore.user_id);
             Debug.Assert(user != null);

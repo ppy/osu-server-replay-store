@@ -69,6 +69,15 @@ namespace osu.Server.ReplayCache.Services
             return memoryStream;
         }
 
+        public async Task DeleteReplayAsync(long scoreId, ushort rulesetId, bool legacyScore)
+        {
+            logger.LogInformation($"Deleting replay for score {scoreId}");
+
+            await s3Client.DeleteObjectAsync(
+                legacyScore ? getLegacyBucket(rulesetId) : AppSettings.S3ReplaysBucketName,
+                getPathToReplay(scoreId));
+        }
+
         private static string getLegacyBucket(ushort rulesetId) =>
             string.Format(AppSettings.S3LegacyReplaysBucketName, LegacyRulesetHelper.GetRulesetNameFromLegacyId(rulesetId));
 

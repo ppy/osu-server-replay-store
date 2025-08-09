@@ -40,6 +40,14 @@ namespace osu.Server.ReplayCache.Services
             return memoryStream;
         }
 
+        public Task DeleteReplayAsync(long scoreId, ushort rulesetId, bool legacyScore)
+        {
+            string path = getPathToReplay(scoreId, rulesetId, legacyScore);
+
+            File.Delete(path);
+            return Task.CompletedTask;
+        }
+
         private string getReplayDirectory(ushort rulesetId, bool legacyScore) =>
             legacyScore
                 ? string.Format(legacyBaseDirectory, LegacyRulesetHelper.GetRulesetNameFromLegacyId(rulesetId))
