@@ -5,9 +5,12 @@ using System.Net;
 using Dapper;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using osu.Framework.Extensions;
 using osu.Server.QueueProcessor;
+using osu.Server.ReplayCache.Configuration;
 using osu.Server.ReplayCache.Services;
 using osu.Server.ReplayCache.Tests.Resources;
 
@@ -40,15 +43,19 @@ namespace osu.Server.ReplayCache.Tests
                 Directory.CreateTempSubdirectory(nameof(ReplayCacheControllerTest)).FullName,
                 legacyReplayDirectory);
 
+            distributedCache = new RedisCache(Options.Create(new RedisCacheOptions
+            {
+                Configuration = AppSettings.RedisHost,
+            }));
+
             Client = webApplicationFactory.WithWebHostBuilder(builder =>
             {
                 builder.ConfigureTestServices(services =>
                 {
                     services.AddTransient<IReplayStorage>(_ => replayStorage);
+                    services.AddSingleton(distributedCache);
                 });
             }).CreateClient();
-
-            distributedCache = webApplicationFactory.Services.GetRequiredService<IDistributedCache>();
         }
 
         [Fact]

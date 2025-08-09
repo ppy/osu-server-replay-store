@@ -47,30 +47,6 @@ namespace osu.Server.ReplayCache.Tests
             db.Execute("TRUNCATE TABLE `osu_replays_mania`");
         }
 
-        protected void WaitForDatabaseState<T>(string sql, T expected, CancellationToken cancellationToken, object? param = null)
-        {
-            using (var db = DatabaseAccess.GetConnection())
-            {
-                T? lastValue = default;
-
-                while (true)
-                {
-                    if (!Debugger.IsAttached)
-                    {
-                        if (cancellationToken.IsCancellationRequested)
-                            throw new TimeoutException($"Waiting for database state took too long (expected: {expected} last: {lastValue} sql: {sql})");
-                    }
-
-                    lastValue = db.QueryFirstOrDefault<T>(sql, param);
-
-                    if ((expected == null && lastValue == null) || expected?.Equals(lastValue) == true)
-                        return;
-
-                    Thread.Sleep(50);
-                }
-            }
-        }
-
         public virtual void Dispose()
         {
             Client.Dispose();
