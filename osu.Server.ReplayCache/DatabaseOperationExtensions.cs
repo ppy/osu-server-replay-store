@@ -34,7 +34,7 @@ namespace osu.Server.ReplayCache
 
         public static Task<User?> GetUserAsync(this MySqlConnection db, int userId, MySqlTransaction? transaction = null)
         {
-            return db.QuerySingleOrDefaultAsync<User?>(@"SELECT * FROM `phpbb_users` WHERE `id` = @userId",
+            return db.QuerySingleOrDefaultAsync<User?>(@"SELECT * FROM `phpbb_users` WHERE `user_id` = @userId",
                 new
                 {
                     userId
