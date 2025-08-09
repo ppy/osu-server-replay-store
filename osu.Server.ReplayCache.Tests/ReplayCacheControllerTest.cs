@@ -5,12 +5,9 @@ using System.Net;
 using Dapper;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Caching.Distributed;
-using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 using osu.Framework.Extensions;
 using osu.Server.QueueProcessor;
-using osu.Server.ReplayCache.Configuration;
 using osu.Server.ReplayCache.Services;
 using osu.Server.ReplayCache.Tests.Resources;
 
@@ -43,19 +40,15 @@ namespace osu.Server.ReplayCache.Tests
                 Directory.CreateTempSubdirectory(nameof(ReplayCacheControllerTest)).FullName,
                 legacyReplayDirectory);
 
-            distributedCache = new RedisCache(Options.Create(new RedisCacheOptions
-            {
-                Configuration = AppSettings.RedisHost,
-            }));
-
             Client = webApplicationFactory.WithWebHostBuilder(builder =>
             {
                 builder.ConfigureTestServices(services =>
                 {
                     services.AddTransient<IReplayStorage>(_ => replayStorage);
-                    services.AddSingleton(distributedCache);
                 });
             }).CreateClient();
+
+            distributedCache = webApplicationFactory.Services.GetRequiredService<IDistributedCache>();
         }
 
         [Fact]
@@ -74,7 +67,7 @@ namespace osu.Server.ReplayCache.Tests
             var response = await Client.PutAsync("/replays/1", form);
             Assert.True(response.IsSuccessStatusCode);
 
-            byte[]? cachedReplay = await distributedCache.GetAsync("1");
+            byte[]? cachedReplay = await distributedCache.GetAsync("solo-replay-1");
             Assert.NotNull(cachedReplay);
         }
 
@@ -116,7 +109,7 @@ namespace osu.Server.ReplayCache.Tests
             var response = await Client.PutAsync("/replays/0/1", form);
             Assert.True(response.IsSuccessStatusCode);
 
-            byte[]? cachedReplay = await distributedCache.GetAsync("legacy-0_1");
+            byte[]? cachedReplay = await distributedCache.GetAsync("legacy-replay-0_1");
             Assert.NotNull(cachedReplay);
         }
 
@@ -229,12 +222,12 @@ namespace osu.Server.ReplayCache.Tests
             using var stream = TestResources.GetResource(solo_replay_filename)!;
 
             await replayStorage.StoreReplayAsync(1, 0, false, stream);
-            await distributedCache.SetAsync("1", await stream.ReadAllBytesToArrayAsync());
+            await distributedCache.SetAsync("solo-replay-1", await stream.ReadAllBytesToArrayAsync());
 
             var response = await Client.DeleteAsync("/replays/1");
             Assert.True(response.IsSuccessStatusCode);
 
-            byte[]? cachedReplay = await distributedCache.GetAsync("1");
+            byte[]? cachedReplay = await distributedCache.GetAsync("solo-replay-1");
             Assert.Null(cachedReplay);
         }
 
@@ -270,12 +263,12 @@ namespace osu.Server.ReplayCache.Tests
             using var stream = TestResources.GetResource(legacy_replay_filename)!;
 
             await replayStorage.StoreReplayAsync(1, 0, false, stream);
-            await distributedCache.SetAsync("legacy-0_1", await stream.ReadAllBytesToArrayAsync());
+            await distributedCache.SetAsync("legacy-replay-0_1", await stream.ReadAllBytesToArrayAsync());
 
             var response = await Client.DeleteAsync("/replays/0/1");
             Assert.True(response.IsSuccessStatusCode);
 
-            byte[]? cachedReplay = await distributedCache.GetAsync("legacy-0_1");
+            byte[]? cachedReplay = await distributedCache.GetAsync("legacy-replay-0_1");
             Assert.Null(cachedReplay);
         }
 

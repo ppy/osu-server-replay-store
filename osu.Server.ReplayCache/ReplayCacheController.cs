@@ -2,7 +2,6 @@
 // See the LICENCE file in the repository root for full licence text.
 
 using System.Diagnostics;
-using System.Globalization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Distributed;
 using MySqlConnector;
@@ -290,7 +289,7 @@ namespace osu.Server.ReplayCache
 
         private static string getCacheKey(long scoreId, ushort rulesetId, bool legacyScore) =>
             legacyScore
-                ? $"legacy-{rulesetId}_{scoreId}"
-                : scoreId.ToString(CultureInfo.InvariantCulture);
+                ? $"legacy-replay-{rulesetId}_{scoreId}"
+                : $"solo-replay-{scoreId}";
     }
 }
