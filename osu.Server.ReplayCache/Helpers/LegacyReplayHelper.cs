@@ -15,7 +15,7 @@ namespace osu.Server.ReplayCache.Helpers
         {
             var memoryStream = new MemoryStream();
 
-            using var writer = new SerializationWriter(memoryStream);
+            using var writer = new SerializationWriter(memoryStream, leaveOpen: true);
 
             string scoreChecksum = $"{score.maxcombo}osu{user.username}{beatmap.checksum}{score.score}{score.rank}";
 
