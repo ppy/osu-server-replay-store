@@ -15,6 +15,7 @@ using StatsdClient;
 
 namespace osu.Server.ReplayCache
 {
+    [Route("replays")]
     public class ReplayCacheController : Controller
     {
         private const string content_type = "application/x-osu-replay";
@@ -29,7 +30,7 @@ namespace osu.Server.ReplayCache
         }
 
         [HttpPut]
-        [Route("replays/{scoreId:long}")]
+        [Route("{scoreId:long}")]
         [ProducesResponseType(204)]
         public async Task<IActionResult> PutReplayAsync(
             [FromRoute] long scoreId,
@@ -64,7 +65,7 @@ namespace osu.Server.ReplayCache
         }
 
         [HttpPut]
-        [Route("replays/{rulesetId:int}/{legacyScoreId:long}")]
+        [Route("{rulesetId:int}/{legacyScoreId:long}")]
         [ProducesResponseType(204)]
         public async Task<IActionResult> PutLegacyReplayAsync(
             [FromRoute] ushort rulesetId,
@@ -106,7 +107,7 @@ namespace osu.Server.ReplayCache
         }
 
         [HttpGet]
-        [Route("replays/{scoreId:long}")]
+        [Route("{scoreId:long}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(404)]
         public async Task<IActionResult> GetReplayAsync([FromRoute] long scoreId)
@@ -135,7 +136,7 @@ namespace osu.Server.ReplayCache
         }
 
         [HttpGet]
-        [Route("replays/{rulesetId:int}/{legacyScoreId:long}")]
+        [Route("{rulesetId:int}/{legacyScoreId:long}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(404)]
         public async Task<IActionResult> GetLegacyReplayAsync(
@@ -172,7 +173,7 @@ namespace osu.Server.ReplayCache
         }
 
         [HttpDelete]
-        [Route("replays/{scoreId:long}")]
+        [Route("{scoreId:long}")]
         [ProducesResponseType(204)]
         [ProducesResponseType(404)]
         public async Task<IActionResult> DeleteReplayAsync([FromRoute] long scoreId)
@@ -193,7 +194,7 @@ namespace osu.Server.ReplayCache
         }
 
         [HttpDelete]
-        [Route("replays/{rulesetId:int}/{legacyScoreId:long}")]
+        [Route("{rulesetId:int}/{legacyScoreId:long}")]
         [ProducesResponseType(204)]
         [ProducesResponseType(404)]
         public async Task<IActionResult> DeleteLegacyReplayAsync(
