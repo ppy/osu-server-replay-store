@@ -92,6 +92,12 @@ namespace osu.Server.ReplayCache.Tests
             await db.ExecuteAsync(
                 "INSERT INTO `osu_scores_high` (`score_id`, `user_id`, `beatmap_id`) values (1, 1, 1);");
 
+            await db.ExecuteAsync(
+                "INSERT INTO `phpbb_users` (`user_id`, `username`, `username_clean`, `country_acronym`, `user_permissions`, `user_sig`, `user_occ`, `user_interests`) VALUES (1, 'test', 'test', 'JP', '', '', '', '')");
+
+            await db.ExecuteAsync(
+                "INSERT INTO `osu_replays` (`score_id`) VALUES (1);");
+
             using var stream = TestResources.GetResource(legacy_replay_filename)!;
 
             var form = new MultipartFormDataContent();
@@ -161,6 +167,12 @@ namespace osu.Server.ReplayCache.Tests
 
             await db.ExecuteAsync(
                 "INSERT INTO `osu_scores_high` (`score_id`, `user_id`, `beatmap_id`, `replay`) values (1, 1, 1, 1);");
+
+            await db.ExecuteAsync(
+                "INSERT INTO `phpbb_users` (`user_id`, `username`, `username_clean`, `country_acronym`, `user_permissions`, `user_sig`, `user_occ`, `user_interests`) VALUES (1, 'test', 'test', 'JP', '', '', '', '')");
+
+            await db.ExecuteAsync(
+                "INSERT INTO `osu_replays` (`score_id`) VALUES (1);");
 
             using var stream = TestResources.GetResource(legacy_replay_filename)!;
 
