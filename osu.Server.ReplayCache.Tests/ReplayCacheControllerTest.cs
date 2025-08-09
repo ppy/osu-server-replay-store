@@ -90,7 +90,7 @@ namespace osu.Server.ReplayCache.Tests
             using var db = await DatabaseAccess.GetConnectionAsync();
 
             await db.ExecuteAsync(
-                "INSERT INTO `osu_scores_high` (`id`, `user_id`, `beatmap_id`) values (1, 1, 1);");
+                "INSERT INTO `osu_scores_high` (`score_id`, `user_id`, `beatmap_id`) values (1, 1, 1);");
 
             using var stream = TestResources.GetResource(legacy_replay_filename)!;
 
@@ -160,7 +160,7 @@ namespace osu.Server.ReplayCache.Tests
             using var db = await DatabaseAccess.GetConnectionAsync();
 
             await db.ExecuteAsync(
-                "INSERT INTO `osu_scores_high` (`id`, `user_id`, `beatmap_id`, `replay`) values (1, 1, 1, 1);");
+                "INSERT INTO `osu_scores_high` (`score_id`, `user_id`, `beatmap_id`, `replay`) values (1, 1, 1, 1);");
 
             using var stream = TestResources.GetResource(legacy_replay_filename)!;
 
@@ -184,7 +184,7 @@ namespace osu.Server.ReplayCache.Tests
             using var db = await DatabaseAccess.GetConnectionAsync();
 
             await db.ExecuteAsync(
-                "INSERT INTO `osu_scores_high` (`id`, `user_id`, `beatmap_id`, `replay`) values (1, 1, 1, 0);");
+                "INSERT INTO `osu_scores_high` (`score_id`, `user_id`, `beatmap_id`, `replay`) values (1, 1, 1, 0);");
 
             var response = await Client.GetAsync("/replays/0/1");
             Assert.False(response.IsSuccessStatusCode);
@@ -238,7 +238,7 @@ namespace osu.Server.ReplayCache.Tests
             using var db = await DatabaseAccess.GetConnectionAsync();
 
             await db.ExecuteAsync(
-                "INSERT INTO `osu_scores_high` (`id`, `user_id`, `beatmap_id`, `replay`) values (1, 1, 1, 1);");
+                "INSERT INTO `osu_scores_high` (`score_id`, `user_id`, `beatmap_id`, `replay`) values (1, 1, 1, 1);");
 
             using var stream = TestResources.GetResource(legacy_replay_filename)!;
 
@@ -266,7 +266,7 @@ namespace osu.Server.ReplayCache.Tests
             using var db = await DatabaseAccess.GetConnectionAsync();
 
             await db.ExecuteAsync(
-                "INSERT INTO `osu_scores_high` (`id`, `user_id`, `beatmap_id`, `replay`) values (1, 1, 1, 0);");
+                "INSERT INTO `osu_scores_high` (`score_id`, `user_id`, `beatmap_id`, `replay`) values (1, 1, 1, 0);");
 
             var response = await Client.DeleteAsync("/replays/0/1");
             Assert.False(response.IsSuccessStatusCode);
