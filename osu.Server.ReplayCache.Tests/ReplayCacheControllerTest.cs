@@ -98,6 +98,9 @@ namespace osu.Server.ReplayCache.Tests
             await db.ExecuteAsync(
                 "INSERT INTO `osu_replays` (`score_id`) VALUES (1);");
 
+            await db.ExecuteAsync(
+                "INSERT INTO `osu_beatmaps` (`beatmap_id`, `checksum`) VALUES (1, '5d370b1b0483f4fc7c64bff0ade06c0f');");
+
             using var stream = TestResources.GetResource(legacy_replay_filename)!;
 
             var form = new MultipartFormDataContent();
@@ -173,6 +176,9 @@ namespace osu.Server.ReplayCache.Tests
 
             await db.ExecuteAsync(
                 "INSERT INTO `osu_replays` (`score_id`) VALUES (1);");
+
+            await db.ExecuteAsync(
+                "INSERT INTO `osu_beatmaps` (`beatmap_id`, `checksum`) VALUES (1, '5d370b1b0483f4fc7c64bff0ade06c0f');");
 
             using var stream = TestResources.GetResource(legacy_replay_filename)!;
 
