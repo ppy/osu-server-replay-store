@@ -95,7 +95,7 @@ namespace osu.Server.ReplayCache
                 db);
 
             await distributedCache.SetAsync(
-                getCacheKey(legacyScoreId, rulesetId, legacyScore: false),
+                getCacheKey(legacyScoreId, rulesetId, legacyScore: true),
                 await replayWithHeaders.ReadAllRemainingBytesToArrayAsync(),
                 new DistributedCacheEntryOptions
                 {
