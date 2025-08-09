@@ -140,6 +140,7 @@ namespace osu.Server.ReplayCache.Tests
 
             var response = await Client.GetAsync("/replays/1");
             Assert.True(response.IsSuccessStatusCode);
+            Assert.Equal("0", response.Headers.GetValues("X-Cache-Hit").Single());
         }
 
         [Fact]
@@ -186,6 +187,7 @@ namespace osu.Server.ReplayCache.Tests
 
             var response = await Client.GetAsync("/replays/0/1");
             Assert.True(response.IsSuccessStatusCode);
+            Assert.Equal("0", response.Headers.GetValues("X-Cache-Hit").Single());
         }
 
         [Fact]

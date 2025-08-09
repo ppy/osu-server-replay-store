@@ -126,12 +126,16 @@ namespace osu.Server.ReplayCache
             if (cachedReplay != null)
             {
                 DogStatsd.Increment("replays_downloaded", tags: ["cache"]);
+
+                Response.Headers.Append("X-Cache-Hit", "1");
                 return File(cachedReplay, content_type, fileName);
             }
 
             var replayStream = await replayStorage.GetReplayStreamAsync(scoreId, score.ruleset_id, legacyScore: false);
 
             DogStatsd.Increment("replays_downloaded");
+
+            Response.Headers.Append("X-Cache-Hit", "0");
             return File(replayStream, content_type, fileName);
         }
 
@@ -157,6 +161,8 @@ namespace osu.Server.ReplayCache
             if (cachedReplay != null)
             {
                 DogStatsd.Increment("replays_downloaded", tags: ["cache", "legacy"]);
+
+                Response.Headers.Append("X-Cache-Hit", "1");
                 return File(cachedReplay, content_type, fileName);
             }
 
@@ -169,6 +175,8 @@ namespace osu.Server.ReplayCache
                 db);
 
             DogStatsd.Increment("replays_downloaded", tags: ["legacy"]);
+
+            Response.Headers.Append("X-Cache-Hit", "0");
             return File(replayWithHeaders, content_type, fileName);
         }
 
