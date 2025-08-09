@@ -29,9 +29,15 @@ namespace osu.Server.ReplayCache
             this.distributedCache = distributedCache;
         }
 
+        /// <summary>
+        /// Uploads a new solo replay.
+        /// </summary>
+        /// <response code="204">The replay was uploaded successfully.</response>
+        /// <response code="404">The given score ID could not be found in the database.</response>
         [HttpPut]
         [Route("{scoreId:long}")]
         [ProducesResponseType(204)]
+        [ProducesResponseType(404)]
         public async Task<IActionResult> PutReplayAsync(
             [FromRoute] long scoreId,
             IFormFile replayFile)
@@ -64,9 +70,15 @@ namespace osu.Server.ReplayCache
             return NoContent();
         }
 
+        /// <summary>
+        /// Uploads a new legacy replay.
+        /// </summary>
+        /// <response code="204">The replay was uploaded successfully.</response>
+        /// <response code="404">The given score ID could not be found in the database.</response>
         [HttpPut]
         [Route("{rulesetId:int}/{legacyScoreId:long}")]
         [ProducesResponseType(204)]
+        [ProducesResponseType(404)]
         public async Task<IActionResult> PutLegacyReplayAsync(
             [FromRoute] ushort rulesetId,
             [FromRoute] long legacyScoreId,
@@ -106,10 +118,16 @@ namespace osu.Server.ReplayCache
             return NoContent();
         }
 
+        /// <summary>
+        /// Fetches the solo replay for a score.
+        /// </summary>
+        /// <response code="200">The replay was downloaded successfully.</response>
+        /// <response code="404">The given score ID could not be found in the database, or the score has no replay.</response>
         [HttpGet]
         [Route("{scoreId:long}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(404)]
+        [Produces(content_type)]
         public async Task<IActionResult> GetReplayAsync([FromRoute] long scoreId)
         {
             using var db = await DatabaseAccess.GetConnectionAsync();
@@ -139,10 +157,16 @@ namespace osu.Server.ReplayCache
             return File(replayStream, content_type, fileName);
         }
 
+        /// <summary>
+        /// Fetches the replay for a legacy score.
+        /// </summary>
+        /// <response code="200">The replay was downloaded successfully.</response>
+        /// <response code="404">The given score ID could not be found in the database, or the score has no replay.</response>
         [HttpGet]
         [Route("{rulesetId:int}/{legacyScoreId:long}")]
         [ProducesResponseType(200)]
         [ProducesResponseType(404)]
+        [Produces(content_type)]
         public async Task<IActionResult> GetLegacyReplayAsync(
             [FromRoute] ushort rulesetId,
             [FromRoute] long legacyScoreId)
@@ -180,6 +204,11 @@ namespace osu.Server.ReplayCache
             return File(replayWithHeaders, content_type, fileName);
         }
 
+        /// <summary>
+        /// Deletes the solo replay for a score.
+        /// </summary>
+        /// <response code="204">The replay was deleted successfully.</response>
+        /// <response code="404">The given score ID could not be found in the database, or the score has no replay.</response>
         [HttpDelete]
         [Route("{scoreId:long}")]
         [ProducesResponseType(204)]
@@ -201,6 +230,11 @@ namespace osu.Server.ReplayCache
             return NoContent();
         }
 
+        /// <summary>
+        /// Deletes the replay for a legacy score.
+        /// </summary>
+        /// <response code="204">The replay was deleted successfully.</response>
+        /// <response code="404">The given score ID could not be found in the database, or the score has no replay.</response>
         [HttpDelete]
         [Route("{rulesetId:int}/{legacyScoreId:long}")]
         [ProducesResponseType(204)]
