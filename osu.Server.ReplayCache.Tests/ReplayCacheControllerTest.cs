@@ -26,7 +26,19 @@ namespace osu.Server.ReplayCache.Tests
         public ReplayCacheControllerTest(IntegrationTestWebApplicationFactory<Program> webApplicationFactory)
             : base(webApplicationFactory)
         {
-            replayStorage = new LocalReplayStorage(Directory.CreateTempSubdirectory(nameof(ReplayCacheControllerTest)).FullName);
+            string tempPath = Path.GetTempPath();
+
+            string legacyReplayDirectory = Path.Combine(tempPath, $"{nameof(ReplayCacheControllerTest)}_{0}");
+
+            foreach (string ruleset in new[] { "osu", "taiko", "fruits", "mania" })
+            {
+                string directory = string.Format(legacyReplayDirectory, ruleset);
+                Directory.CreateDirectory(directory);
+            }
+
+            replayStorage = new LocalReplayStorage(
+                Directory.CreateTempSubdirectory(nameof(ReplayCacheControllerTest)).FullName,
+                legacyReplayDirectory);
 
             Client = webApplicationFactory.WithWebHostBuilder(builder =>
             {
