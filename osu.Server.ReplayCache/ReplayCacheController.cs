@@ -99,7 +99,7 @@ namespace osu.Server.ReplayCache
 
             await replayStorage.StoreReplayAsync(legacyScoreId, rulesetId, legacyScore: true, replayStream);
 
-            Stream replayWithHeaders = await createLegacyReplayWithHeadersAsync(
+            using var replayWithHeaders = await createLegacyReplayWithHeadersAsync(
                 replayBytes,
                 rulesetId,
                 score,
@@ -189,7 +189,7 @@ namespace osu.Server.ReplayCache
                 return File(cachedReplay, content_type, fileName);
             }
 
-            var replayStream = await replayStorage.GetReplayStreamAsync(legacyScoreId, rulesetId, legacyScore: true);
+            using var replayStream = await replayStorage.GetReplayStreamAsync(legacyScoreId, rulesetId, legacyScore: true);
 
             var replayWithHeaders = await createLegacyReplayWithHeadersAsync(
                 await replayStream.ReadAllRemainingBytesToArrayAsync(),
