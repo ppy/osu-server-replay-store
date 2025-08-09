@@ -18,10 +18,12 @@ namespace osu.Server.ReplayCache
             var builder = WebApplication.CreateBuilder(args);
 
             builder.Services.AddControllers();
-            builder.Services.AddStackExchangeRedisCache(options =>
-            {
-                options.Configuration = AppSettings.RedisHost;
-            });
+
+            if (builder.Environment.EnvironmentName != INTEGRATION_TEST_ENVIRONMENT)
+                builder.Services.AddStackExchangeRedisCache(options =>
+                {
+                    options.Configuration = AppSettings.RedisHost;
+                });
 
             builder.Services.AddHttpLogging(logging =>
             {
