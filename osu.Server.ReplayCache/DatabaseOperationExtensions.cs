@@ -56,7 +56,7 @@ namespace osu.Server.ReplayCache
         {
             string replayViewCountTable = LegacyRulesetHelper.GetLegacyReplayViewCountTableFromLegacyId(rulesetId);
 
-            return db.QuerySingleOrDefaultAsync<int?>(@$"SELECT version FROM `{replayViewCountTable}` WHERE `score_id` = @legacyScoreId`",
+            return db.QuerySingleOrDefaultAsync<int?>(@$"SELECT `version` FROM `{replayViewCountTable}` WHERE `score_id` = @legacyScoreId",
                 new
                 {
                     legacyScoreId = legacyScoreId
