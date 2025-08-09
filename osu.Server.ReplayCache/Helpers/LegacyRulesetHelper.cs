@@ -40,7 +40,7 @@ namespace osu.Server.ReplayCache.Helpers
 
         private static string getLegacyTableSuffixFromLegacyId(int legacyId)
         {
-            bool legacySuffix = legacyId == 0;
+            bool legacySuffix = legacyId != 0;
 
             string ruleset = GetRulesetNameFromLegacyId(legacyId);
 
