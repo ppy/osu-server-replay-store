@@ -53,10 +53,7 @@ namespace osu.Server.ReplayCache.Configuration
             ?? throw new InvalidOperationException("S3_REPLAYS_BUCKET_REGION environment variable not set. "
                                                    + $"Please set the value of this variable to the region in which the \"{S3ReplaysBucketName}\" bucket exists.");
 
-        public static string RedisHost =>
-            Environment.GetEnvironmentVariable("REDIS_HOST")
-            ?? throw new InvalidOperationException("REDIS_HOST environment variable not set. "
-                                                   + "Please set the value of this variable to a valid Redis host.");
+        public static string RedisHost => Environment.GetEnvironmentVariable("REDIS_HOST") ?? "localhost";
 
         public static string? SentryDsn => Environment.GetEnvironmentVariable("SENTRY_DSN");
 
