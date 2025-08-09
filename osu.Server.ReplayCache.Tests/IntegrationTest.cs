@@ -41,6 +41,10 @@ namespace osu.Server.ReplayCache.Tests
             db.Execute("TRUNCATE TABLE `osu_scores_taiko_high`");
             db.Execute("TRUNCATE TABLE `osu_scores_fruits_high`");
             db.Execute("TRUNCATE TABLE `osu_scores_mania_high`");
+            db.Execute("TRUNCATE TABLE `osu_replays`");
+            db.Execute("TRUNCATE TABLE `osu_replays_taiko`");
+            db.Execute("TRUNCATE TABLE `osu_replays_fruits`");
+            db.Execute("TRUNCATE TABLE `osu_replays_mania`");
         }
 
         protected void WaitForDatabaseState<T>(string sql, T expected, CancellationToken cancellationToken, object? param = null)
