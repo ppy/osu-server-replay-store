@@ -45,7 +45,7 @@ jobs:
         uses: JetBrains/ReSharper-InspectCode@v0.8
         with:
           build: true
-          solution: ./osu-server-replay-cache.sln
+          solution: ./osu-server-replay-store.sln
           caches-home: inspectcode
           verbosity: WARN
 

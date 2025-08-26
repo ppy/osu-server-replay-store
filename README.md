@@ -1,4 +1,4 @@
-# osu-server-replay-cache
+# osu-server-replay-store
 
 Handles all replay-related storage.
 
