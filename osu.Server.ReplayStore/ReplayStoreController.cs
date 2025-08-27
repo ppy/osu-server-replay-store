@@ -61,7 +61,7 @@ namespace osu.Server.ReplayStore
                     AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(1),
                 });
 
-            DogStatsd.Increment("replays_uploaded");
+            DogStatsd.Increment("replays_uploaded", tags: ["type:lazer"]);
             return NoContent();
         }
 
@@ -105,7 +105,7 @@ namespace osu.Server.ReplayStore
                     AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(1),
                 });
 
-            DogStatsd.Increment("replays_uploaded", tags: ["legacy"]);
+            DogStatsd.Increment("replays_uploaded", tags: ["type:legacy"]);
             return NoContent();
         }
 
@@ -134,7 +134,7 @@ namespace osu.Server.ReplayStore
 
             if (cachedReplay != null)
             {
-                DogStatsd.Increment("replays_downloaded", tags: ["cache"]);
+                DogStatsd.Increment("replays_downloaded", tags: ["type:lazer", "source:cache"]);
 
                 Response.Headers.Append("X-Cache-Hit", "1");
                 return File(cachedReplay, content_type, fileName);
@@ -142,7 +142,7 @@ namespace osu.Server.ReplayStore
 
             var replayStream = await replayStorage.GetReplayStreamAsync(scoreId, score.ruleset_id, legacyScore: false);
 
-            DogStatsd.Increment("replays_downloaded");
+            DogStatsd.Increment("replays_downloaded", tags: ["type:lazer", "source:storage"]);
 
             Response.Headers.Append("X-Cache-Hit", "0");
             return File(replayStream, content_type, fileName);
@@ -175,7 +175,7 @@ namespace osu.Server.ReplayStore
 
             if (cachedReplay != null)
             {
-                DogStatsd.Increment("replays_downloaded", tags: ["cache", "legacy"]);
+                DogStatsd.Increment("replays_downloaded", tags: ["type:legacy", "source:cache"]);
 
                 Response.Headers.Append("X-Cache-Hit", "1");
                 return File(cachedReplay, content_type, fileName);
@@ -189,7 +189,7 @@ namespace osu.Server.ReplayStore
                 score,
                 db);
 
-            DogStatsd.Increment("replays_downloaded", tags: ["legacy"]);
+            DogStatsd.Increment("replays_downloaded", tags: ["type:legacy", "source:storage"]);
 
             Response.Headers.Append("X-Cache-Hit", "0");
             return File(replayWithHeaders, content_type, fileName);
@@ -216,7 +216,7 @@ namespace osu.Server.ReplayStore
             await replayStorage.DeleteReplayAsync(scoreId, score.ruleset_id, legacyScore: false);
             await distributedCache.RemoveAsync(getCacheKey(scoreId, score.ruleset_id, legacyScore: false));
 
-            DogStatsd.Increment("replays_deleted");
+            DogStatsd.Increment("replays_deleted", tags: ["type:lazer"]);
 
             return NoContent();
         }
@@ -244,7 +244,7 @@ namespace osu.Server.ReplayStore
             await replayStorage.DeleteReplayAsync(legacyScoreId, rulesetId, legacyScore: true);
             await distributedCache.RemoveAsync(getCacheKey(legacyScoreId, rulesetId, legacyScore: true));
 
-            DogStatsd.Increment("replays_deleted", tags: ["legacy"]);
+            DogStatsd.Increment("replays_deleted", tags: ["type:legacy"]);
 
             return NoContent();
         }
