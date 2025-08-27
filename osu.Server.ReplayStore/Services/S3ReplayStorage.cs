@@ -24,8 +24,6 @@ namespace osu.Server.ReplayStore.Services
                 new BasicAWSCredentials(AppSettings.S3AccessKey, AppSettings.S3SecretKey),
                 new AmazonS3Config
                 {
-                    CacheHttpClient = true,
-                    HttpClientCacheSize = 32,
                     RegionEndpoint = RegionEndpoint.GetBySystemName(AppSettings.S3ReplaysBucketRegion),
                     UseHttp = true,
                     ForcePathStyle = true,
