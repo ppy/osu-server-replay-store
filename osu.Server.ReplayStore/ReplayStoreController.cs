@@ -216,8 +216,6 @@ namespace osu.Server.ReplayStore
             await replayStorage.DeleteReplayAsync(scoreId, score.ruleset_id, legacyScore: false);
             await distributedCache.RemoveAsync(getCacheKey(scoreId, score.ruleset_id, legacyScore: false));
 
-            DogStatsd.Increment("replays_deleted", tags: ["type:lazer"]);
-
             return NoContent();
         }
 
@@ -243,8 +241,6 @@ namespace osu.Server.ReplayStore
 
             await replayStorage.DeleteReplayAsync(legacyScoreId, rulesetId, legacyScore: true);
             await distributedCache.RemoveAsync(getCacheKey(legacyScoreId, rulesetId, legacyScore: true));
-
-            DogStatsd.Increment("replays_deleted", tags: ["type:legacy"]);
 
             return NoContent();
         }
