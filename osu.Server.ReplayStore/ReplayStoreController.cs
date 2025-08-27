@@ -7,6 +7,7 @@ using Microsoft.Extensions.Caching.Distributed;
 using MySqlConnector;
 using osu.Framework.Extensions;
 using osu.Server.QueueProcessor;
+using osu.Server.ReplayStore.Configuration;
 using osu.Server.ReplayStore.Helpers;
 using osu.Server.ReplayStore.Models.Database;
 using osu.Server.ReplayStore.Services;
@@ -58,7 +59,7 @@ namespace osu.Server.ReplayStore
                 replayBytes,
                 new DistributedCacheEntryOptions
                 {
-                    AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(1),
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(AppSettings.ReplayCacheHours)
                 });
 
             DogStatsd.Increment("replays_uploaded");
@@ -102,7 +103,7 @@ namespace osu.Server.ReplayStore
                 await replayWithHeaders.ReadAllRemainingBytesToArrayAsync(),
                 new DistributedCacheEntryOptions
                 {
-                    AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(1),
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(AppSettings.ReplayCacheHours)
                 });
 
             DogStatsd.Increment("replays_uploaded", tags: ["legacy"]);
