@@ -24,8 +24,6 @@ namespace osu.Server.ReplayStore.Services
                 new BasicAWSCredentials(AppSettings.S3AccessKey, AppSettings.S3SecretKey),
                 new AmazonS3Config
                 {
-                    CacheHttpClient = true,
-                    HttpClientCacheSize = 32,
                     RegionEndpoint = RegionEndpoint.GetBySystemName(AppSettings.S3ReplaysBucketRegion),
                     UseHttp = true,
                     ForcePathStyle = true,
@@ -37,7 +35,11 @@ namespace osu.Server.ReplayStore.Services
 
         public async Task StoreReplayAsync(long scoreId, ushort rulesetId, bool legacyScore, Stream replayData)
         {
-            logger.LogInformation($"Uploading replay for score {scoreId} (ruleset: {rulesetId}, legacy: {legacyScore})");
+            logger.LogInformation(
+                "Uploading replay for score {ScoreId} (ruleset: {RulesetId}, legacy: {LegacyScore})",
+                scoreId,
+                rulesetId,
+                legacyScore);
 
             long length = replayData.Length;
 
@@ -57,7 +59,7 @@ namespace osu.Server.ReplayStore.Services
         {
             var memoryStream = new MemoryStream();
 
-            logger.LogInformation($"Retrieving replay for score {scoreId}");
+            logger.LogInformation("Retrieving replay for score {ScoreId}", scoreId);
 
             using var response = await s3Client.GetObjectAsync(
                 legacyScore ? getLegacyBucket(rulesetId) : AppSettings.S3ReplaysBucketName,
@@ -71,7 +73,7 @@ namespace osu.Server.ReplayStore.Services
 
         public async Task DeleteReplayAsync(long scoreId, ushort rulesetId, bool legacyScore)
         {
-            logger.LogInformation($"Deleting replay for score {scoreId}");
+            logger.LogInformation("Deleting replay for score {ScoreId}", scoreId);
 
             await s3Client.DeleteObjectAsync(
                 legacyScore ? getLegacyBucket(rulesetId) : AppSettings.S3ReplaysBucketName,

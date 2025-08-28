@@ -41,9 +41,12 @@ namespace osu.Server.ReplayStore
             [FromRoute] long scoreId,
             IFormFile replayFile)
         {
-            using var db = await DatabaseAccess.GetConnectionAsync();
+            Score? score;
 
-            var score = await db.GetScoreAsync(scoreId);
+            using (var db = await DatabaseAccess.GetConnectionAsync())
+            {
+                score = await db.GetScoreAsync(scoreId);
+            }
 
             if (score == null)
                 return NotFound();
@@ -79,9 +82,12 @@ namespace osu.Server.ReplayStore
             [FromRoute] long legacyScoreId,
             IFormFile replayFile)
         {
-            using var db = await DatabaseAccess.GetConnectionAsync();
+            HighScore? score;
 
-            var score = await db.GetLegacyScoreAsync(legacyScoreId, rulesetId);
+            using (var db = await DatabaseAccess.GetConnectionAsync())
+            {
+                score = await db.GetLegacyScoreAsync(legacyScoreId, rulesetId);
+            }
 
             if (score == null)
                 return NotFound();
@@ -91,11 +97,16 @@ namespace osu.Server.ReplayStore
 
             await replayStorage.StoreReplayAsync(legacyScoreId, rulesetId, legacyScore: true, replayStream);
 
-            using var replayWithHeaders = await createLegacyReplayWithHeadersAsync(
-                replayBytes,
-                rulesetId,
-                score,
-                db);
+            Stream replayWithHeaders;
+
+            using (var db = await DatabaseAccess.GetConnectionAsync())
+            {
+                replayWithHeaders = await createLegacyReplayWithHeadersAsync(
+                    replayBytes,
+                    rulesetId,
+                    score,
+                    db);
+            }
 
             await distributedCache.SetAsync(
                 getCacheKey(legacyScoreId, rulesetId, legacyScore: true),
@@ -104,6 +115,8 @@ namespace osu.Server.ReplayStore
                 {
                     AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(1),
                 });
+
+            await replayWithHeaders.DisposeAsync();
 
             DogStatsd.Increment("replays_uploaded", tags: ["type:legacy"]);
             return NoContent();
@@ -121,9 +134,12 @@ namespace osu.Server.ReplayStore
         [Produces(content_type)]
         public async Task<IActionResult> GetReplayAsync([FromRoute] long scoreId)
         {
-            using var db = await DatabaseAccess.GetConnectionAsync();
+            Score? score;
 
-            var score = await db.GetScoreAsync(scoreId);
+            using (var db = await DatabaseAccess.GetConnectionAsync())
+            {
+                score = await db.GetScoreAsync(scoreId);
+            }
 
             if (score == null || !score.has_replay)
                 return NotFound();
@@ -162,9 +178,12 @@ namespace osu.Server.ReplayStore
             [FromRoute] ushort rulesetId,
             [FromRoute] long legacyScoreId)
         {
-            using var db = await DatabaseAccess.GetConnectionAsync();
+            HighScore? score;
 
-            var score = await db.GetLegacyScoreAsync(legacyScoreId, rulesetId);
+            using (var db = await DatabaseAccess.GetConnectionAsync())
+            {
+                score = await db.GetLegacyScoreAsync(legacyScoreId, rulesetId);
+            }
 
             if (score == null || !score.replay)
                 return NotFound();
@@ -183,11 +202,16 @@ namespace osu.Server.ReplayStore
 
             using var replayStream = await replayStorage.GetReplayStreamAsync(legacyScoreId, rulesetId, legacyScore: true);
 
-            var replayWithHeaders = await createLegacyReplayWithHeadersAsync(
-                await replayStream.ReadAllRemainingBytesToArrayAsync(),
-                rulesetId,
-                score,
-                db);
+            Stream replayWithHeaders;
+
+            using (var db = await DatabaseAccess.GetConnectionAsync())
+            {
+                replayWithHeaders = await createLegacyReplayWithHeadersAsync(
+                    await replayStream.ReadAllRemainingBytesToArrayAsync(),
+                    rulesetId,
+                    score,
+                    db);
+            }
 
             DogStatsd.Increment("replays_downloaded", tags: ["type:legacy", "source:storage"]);
 
@@ -206,9 +230,12 @@ namespace osu.Server.ReplayStore
         [ProducesResponseType(404)]
         public async Task<IActionResult> DeleteReplayAsync([FromRoute] long scoreId)
         {
-            using var db = await DatabaseAccess.GetConnectionAsync();
+            Score? score;
 
-            var score = await db.GetScoreAsync(scoreId);
+            using (var db = await DatabaseAccess.GetConnectionAsync())
+            {
+                score = await db.GetScoreAsync(scoreId);
+            }
 
             if (score == null || !score.has_replay)
                 return NotFound();
@@ -234,9 +261,12 @@ namespace osu.Server.ReplayStore
             [FromRoute] ushort rulesetId,
             [FromRoute] long legacyScoreId)
         {
-            using var db = await DatabaseAccess.GetConnectionAsync();
+            HighScore? score;
 
-            var score = await db.GetLegacyScoreAsync(legacyScoreId, rulesetId);
+            using (var db = await DatabaseAccess.GetConnectionAsync())
+            {
+                score = await db.GetLegacyScoreAsync(legacyScoreId, rulesetId);
+            }
 
             if (score == null || !score.replay)
                 return NotFound();
