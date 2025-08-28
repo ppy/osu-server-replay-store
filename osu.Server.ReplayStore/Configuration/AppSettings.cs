@@ -18,7 +18,7 @@ namespace osu.Server.ReplayStore.Configuration
             }
         }
 
-        public static int ReplayCacheHours => int.Parse(Environment.GetEnvironmentVariable("REPLAY_CACHE_HOURS") ?? "12");
+        public static int ReplayCacheHours => int.Parse(Environment.GetEnvironmentVariable("REPLAY_CACHE_HOURS") ?? "24");
 
         public static string LocalReplayStoragePath =>
             Environment.GetEnvironmentVariable("LOCAL_REPLAY_STORAGE_PATH")
