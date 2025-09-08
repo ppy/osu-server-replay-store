@@ -30,6 +30,16 @@ namespace osu.Server.ReplayStore.Configuration
             ?? throw new InvalidOperationException("LOCAL_LEGACY_REPLAY_STORAGE_PATH environment variable not set. "
                                                    + "Please set the value of this variable to the path of a directory where the legacy replays should reside.");
 
+        public static string ReplayCacheStoragePath =>
+            Environment.GetEnvironmentVariable("REPLAY_CACHE_STORAGE_PATH")
+            ?? throw new InvalidOperationException("REPLAY_CACHE_STORAGE_PATH environment variable not set. "
+                                                   + "Please set the value of this variable to the path of a directory where cached replays should reside.");
+
+        public static string LegacyReplayCacheStoragePath =>
+            Environment.GetEnvironmentVariable("LEGACY_REPLAY_CACHE_STORAGE_PATH")
+            ?? throw new InvalidOperationException("LEGACY_REPLAY_CACHE_STORAGE_PATH environment variable not set. "
+                                                   + "Please set the value of this variable to the path of a directory where cached legacy replays should reside.");
+
         public static string S3AccessKey =>
             Environment.GetEnvironmentVariable("S3_ACCESS_KEY")
             ?? throw new InvalidOperationException("S3_ACCESS_KEY environment variable not set. "
@@ -56,6 +66,8 @@ namespace osu.Server.ReplayStore.Configuration
                                                    + $"Please set the value of this variable to the region in which the \"{S3ReplaysBucketName}\" bucket exists.");
 
         public static string RedisHost => Environment.GetEnvironmentVariable("REDIS_HOST") ?? "localhost";
+
+        public static int RedisDatabase => int.TryParse(Environment.GetEnvironmentVariable("REDIS_DATABASE"), out int db) ? db : 0;
 
         public static string? SentryDsn => Environment.GetEnvironmentVariable("SENTRY_DSN");
 

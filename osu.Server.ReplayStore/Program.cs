@@ -4,6 +4,7 @@ using JetBrains.Annotations;
 using Microsoft.AspNetCore.HttpLogging;
 using osu.Server.ReplayStore.Configuration;
 using osu.Server.ReplayStore.Services;
+using StackExchange.Redis;
 using StatsdClient;
 
 namespace osu.Server.ReplayStore
@@ -18,10 +19,6 @@ namespace osu.Server.ReplayStore
             var builder = WebApplication.CreateBuilder(args);
 
             builder.Services.AddControllers();
-            builder.Services.AddStackExchangeRedisCache(options =>
-            {
-                options.Configuration = AppSettings.RedisHost;
-            });
 
             builder.Services.AddHttpLogging(logging =>
             {
@@ -122,6 +119,12 @@ namespace osu.Server.ReplayStore
                     }
                 });
             }
+
+            builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(AppSettings.RedisHost));
+
+            builder.Services.AddTransient<IReplayCache, FileReplayCache>();
+
+            builder.Services.AddHostedService<ExpireReplayCacheWorker>();
 
             var app = builder.Build();
 
