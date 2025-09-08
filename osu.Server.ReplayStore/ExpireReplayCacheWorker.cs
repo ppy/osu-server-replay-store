@@ -34,7 +34,7 @@ namespace osu.Server.ReplayStore
 
             var subscriber = connectionMultiplexer.GetSubscriber();
 
-            await subscriber.SubscribeAsync($"__keyspace@{AppSettings.RedisDatabase}__:*", handleKeyspaceEvent);
+            await subscriber.SubscribeAsync(RedisChannel.Pattern($"__keyspace@{AppSettings.RedisDatabase}__:*"), handleKeyspaceEvent);
 
             while (!stoppingToken.IsCancellationRequested)
             {
