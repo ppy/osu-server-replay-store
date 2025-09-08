@@ -67,7 +67,7 @@ namespace osu.Server.ReplayStore.Configuration
 
         public static string RedisHost => Environment.GetEnvironmentVariable("REDIS_HOST") ?? "localhost";
 
-        public static int RedisDatabase => int.TryParse(Environment.GetEnvironmentVariable("REDIS_DATABASE"), out int db) ? db : 0;
+        public static int RedisDatabase => int.Parse(Environment.GetEnvironmentVariable("REDIS_DATABASE") ?? "0");
 
         public static string? SentryDsn => Environment.GetEnvironmentVariable("SENTRY_DSN");
 
