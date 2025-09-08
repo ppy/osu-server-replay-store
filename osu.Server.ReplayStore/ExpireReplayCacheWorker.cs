@@ -60,12 +60,12 @@ namespace osu.Server.ReplayStore
         {
             string[] parts = key.Split('-');
 
-            bool legacyScore = parts[1] == "legacy";
+            bool legacyScore = parts[0] == "legacy";
 
             string[] scoreAndRuleset = parts[2].Split('_');
 
-            ushort rulesetId = ushort.Parse(scoreAndRuleset[1]);
-            long scoreId = long.Parse(scoreAndRuleset[2]);
+            ushort rulesetId = ushort.Parse(scoreAndRuleset[0]);
+            long scoreId = long.Parse(scoreAndRuleset[1]);
 
             return (scoreId, rulesetId, legacyScore);
         }
