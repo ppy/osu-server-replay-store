@@ -122,9 +122,11 @@ namespace osu.Server.ReplayStore
 
             builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(AppSettings.RedisHost));
 
-            builder.Services.AddTransient<IReplayCache, FileReplayCache>();
-
-            builder.Services.AddHostedService<ExpireReplayCacheWorker>();
+            if (builder.Environment.EnvironmentName != INTEGRATION_TEST_ENVIRONMENT)
+            {
+                builder.Services.AddTransient<IReplayCache, FileReplayCache>();
+                builder.Services.AddHostedService<ExpireReplayCacheWorker>();
+            }
 
             var app = builder.Build();
 
