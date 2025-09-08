@@ -16,13 +16,15 @@ namespace osu.Server.ReplayStore
 
         private readonly IConnectionMultiplexer connectionMultiplexer;
         private readonly IServiceScopeFactory serviceScopeFactory;
+        private readonly ILogger<ExpireReplayCacheWorker> logger;
 
         private IReplayCache replayCache = null!;
 
-        public ExpireReplayCacheWorker(IConnectionMultiplexer connectionMultiplexer, IServiceScopeFactory serviceScopeFactory)
+        public ExpireReplayCacheWorker(IConnectionMultiplexer connectionMultiplexer, IServiceScopeFactory serviceScopeFactory, ILogger<ExpireReplayCacheWorker> logger)
         {
             this.connectionMultiplexer = connectionMultiplexer;
             this.serviceScopeFactory = serviceScopeFactory;
+            this.logger = logger;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -44,16 +46,26 @@ namespace osu.Server.ReplayStore
 
         private void handleKeyspaceEvent(RedisChannel channel, RedisValue type)
         {
-            string eventType = type.ToString().ToLowerInvariant();
+            try
+            {
+                string eventType = type.ToString().ToLowerInvariant();
 
-            if (!expired_events.Contains(eventType))
-                return;
+                if (!expired_events.Contains(eventType))
+                    return;
 
-            string key = extractKeyFromChannel(channel!);
+                string key = extractKeyFromChannel(channel!);
 
-            (long scoreId, ushort rulesetId, bool legacyScore) = extractDataFromKey(key);
+                (long scoreId, ushort rulesetId, bool legacyScore) = extractDataFromKey(key);
 
-            replayCache.RemoveAsync(scoreId, rulesetId, legacyScore).Wait();
+                replayCache.RemoveAsync(scoreId, rulesetId, legacyScore).Wait();
+            }
+            catch (Exception ex)
+            {
+                // Due to this method being called by a Redis subscriber, exceptions fail to be raised properly.
+                // Log the error and capture it to Sentry so that we don't ignore them.
+                logger.LogError(ex, "Failed to process keyspace event");
+                SentrySdk.CaptureException(ex);
+            }
         }
 
         private static (long, ushort, bool) extractDataFromKey(string key)
