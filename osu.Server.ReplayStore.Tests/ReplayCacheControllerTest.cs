@@ -4,12 +4,13 @@
 using System.Net;
 using Dapper;
 using Microsoft.AspNetCore.TestHost;
-using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.DependencyInjection;
 using osu.Framework.Extensions;
 using osu.Server.QueueProcessor;
+using osu.Server.ReplayStore.Configuration;
 using osu.Server.ReplayStore.Services;
 using osu.Server.ReplayStore.Tests.Resources;
+using StackExchange.Redis;
 
 namespace osu.Server.ReplayStore.Tests
 {
@@ -21,7 +22,7 @@ namespace osu.Server.ReplayStore.Tests
         protected new HttpClient Client { get; }
 
         private readonly LocalReplayStorage replayStorage;
-        private readonly IDistributedCache distributedCache;
+        private readonly FileReplayCache replayCache;
 
         public ReplayCacheControllerTest(IntegrationTestWebApplicationFactory<Program> webApplicationFactory)
             : base(webApplicationFactory)
@@ -29,14 +30,25 @@ namespace osu.Server.ReplayStore.Tests
             string tempPath = Path.GetTempPath();
 
             string legacyReplayDirectory = Path.Combine(tempPath, $"{nameof(ReplayCacheControllerTest)}_{0}");
+            string legacyReplayCacheDirectory = Path.Combine(tempPath, $"{nameof(ReplayCacheControllerTest)}_cache_{0}");
 
             foreach (string ruleset in new[] { "osu", "taiko", "fruits", "mania" })
             {
                 string directory = string.Format(legacyReplayDirectory, ruleset);
+                string cacheDirectory = Path.Combine(legacyReplayCacheDirectory, ruleset);
+
                 Directory.CreateDirectory(directory);
+                Directory.CreateDirectory(cacheDirectory);
             }
 
             replayStorage = new LocalReplayStorage(
+                Directory.CreateTempSubdirectory(nameof(ReplayCacheControllerTest)).FullName,
+                legacyReplayDirectory);
+
+            var connectionMultiplexer = ConnectionMultiplexer.Connect(AppSettings.RedisHost);
+
+            replayCache = new FileReplayCache(
+                connectionMultiplexer,
                 Directory.CreateTempSubdirectory(nameof(ReplayCacheControllerTest)).FullName,
                 legacyReplayDirectory);
 
@@ -45,10 +57,10 @@ namespace osu.Server.ReplayStore.Tests
                 builder.ConfigureTestServices(services =>
                 {
                     services.AddTransient<IReplayStorage>(_ => replayStorage);
+                    services.AddTransient<IReplayCache>(_ => replayCache);
+                    services.AddSingleton<IConnectionMultiplexer>(_ => connectionMultiplexer);
                 });
             }).CreateClient();
-
-            distributedCache = webApplicationFactory.Services.GetRequiredService<IDistributedCache>();
         }
 
         [Fact]
@@ -67,7 +79,7 @@ namespace osu.Server.ReplayStore.Tests
             var response = await Client.PutAsync("/replays/1", form);
             Assert.True(response.IsSuccessStatusCode);
 
-            byte[]? cachedReplay = await distributedCache.GetAsync("solo-replay-1");
+            byte[]? cachedReplay = await replayCache.FindReplayDataAsync(scoreId: 1, rulesetId: 0, legacyScore: false);
             Assert.NotNull(cachedReplay);
         }
 
@@ -109,7 +121,7 @@ namespace osu.Server.ReplayStore.Tests
             var response = await Client.PutAsync("/replays/0/1", form);
             Assert.True(response.IsSuccessStatusCode);
 
-            byte[]? cachedReplay = await distributedCache.GetAsync("legacy-replay-0_1");
+            byte[]? cachedReplay = await replayCache.FindReplayDataAsync(scoreId: 1, rulesetId: 0, legacyScore: true);
             Assert.NotNull(cachedReplay);
         }
 
@@ -222,12 +234,12 @@ namespace osu.Server.ReplayStore.Tests
             using var stream = TestResources.GetResource(solo_replay_filename)!;
 
             await replayStorage.StoreReplayAsync(1, 0, false, stream);
-            await distributedCache.SetAsync("solo-replay-1", await stream.ReadAllBytesToArrayAsync());
+            await replayCache.AddAsync(scoreId: 1, rulesetId: 0, legacyScore: false, await stream.ReadAllBytesToArrayAsync());
 
             var response = await Client.DeleteAsync("/replays/1");
             Assert.True(response.IsSuccessStatusCode);
 
-            byte[]? cachedReplay = await distributedCache.GetAsync("solo-replay-1");
+            byte[]? cachedReplay = await replayCache.FindReplayDataAsync(scoreId: 1, rulesetId: 0, legacyScore: false);
             Assert.Null(cachedReplay);
         }
 
@@ -262,13 +274,13 @@ namespace osu.Server.ReplayStore.Tests
 
             using var stream = TestResources.GetResource(legacy_replay_filename)!;
 
-            await replayStorage.StoreReplayAsync(1, 0, false, stream);
-            await distributedCache.SetAsync("legacy-replay-0_1", await stream.ReadAllBytesToArrayAsync());
+            await replayStorage.StoreReplayAsync(1, 0, true, stream);
+            await replayCache.AddAsync(scoreId: 1, rulesetId: 0, legacyScore: true, await stream.ReadAllBytesToArrayAsync());
 
             var response = await Client.DeleteAsync("/replays/0/1");
             Assert.True(response.IsSuccessStatusCode);
 
-            byte[]? cachedReplay = await distributedCache.GetAsync("legacy-replay-0_1");
+            byte[]? cachedReplay = await replayCache.FindReplayDataAsync(scoreId: 1, rulesetId: 0, legacyScore: true);
             Assert.Null(cachedReplay);
         }
 
