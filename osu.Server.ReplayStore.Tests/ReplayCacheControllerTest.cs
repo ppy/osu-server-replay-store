@@ -133,7 +133,7 @@ namespace osu.Server.ReplayStore.Tests
         }
 
         [Fact]
-        public async Task TaskGetReplay_SendsReplay()
+        public async Task TestGetReplay_SendsReplay()
         {
             using var db = await DatabaseAccess.GetConnectionAsync();
 
@@ -150,7 +150,7 @@ namespace osu.Server.ReplayStore.Tests
         }
 
         [Fact]
-        public async Task TaskGetReplay_FailsIfNoScore()
+        public async Task TestGetReplay_FailsIfNoScore()
         {
             var response = await Client.GetAsync("/replays/1");
             Assert.False(response.IsSuccessStatusCode);
@@ -158,7 +158,7 @@ namespace osu.Server.ReplayStore.Tests
         }
 
         [Fact]
-        public async Task TaskGetReplay_FailsIfNoReplay()
+        public async Task TestGetReplay_FailsIfNoReplay()
         {
             using var db = await DatabaseAccess.GetConnectionAsync();
 
@@ -171,7 +171,7 @@ namespace osu.Server.ReplayStore.Tests
         }
 
         [Fact]
-        public async Task TaskGetLegacyReplay_SendsReplay()
+        public async Task TestGetLegacyReplay_SendsReplay()
         {
             using var db = await DatabaseAccess.GetConnectionAsync();
 
@@ -197,7 +197,7 @@ namespace osu.Server.ReplayStore.Tests
         }
 
         [Fact]
-        public async Task TaskGetLegacyReplay_FailsIfNoScore()
+        public async Task TestGetLegacyReplay_FailsIfNoScore()
         {
             var response = await Client.GetAsync("/replays/0/1");
             Assert.False(response.IsSuccessStatusCode);
@@ -205,7 +205,7 @@ namespace osu.Server.ReplayStore.Tests
         }
 
         [Fact]
-        public async Task TaskGetLegacyReplay_FailsIfNoReplay()
+        public async Task TestGetLegacyReplay_FailsIfNoReplay()
         {
             using var db = await DatabaseAccess.GetConnectionAsync();
 
@@ -241,7 +241,7 @@ namespace osu.Server.ReplayStore.Tests
         }
 
         [Fact]
-        public async Task TaskDeleteReplay_FailsIfNoScore()
+        public async Task TestDeleteReplay_FailsIfNoScore()
         {
             var response = await Client.DeleteAsync("/replays/1");
             Assert.False(response.IsSuccessStatusCode);
@@ -249,7 +249,7 @@ namespace osu.Server.ReplayStore.Tests
         }
 
         [Fact]
-        public async Task TaskDeleteReplay_FailsIfNoReplay()
+        public async Task TestDeleteReplay_FailsIfNoReplay()
         {
             using var db = await DatabaseAccess.GetConnectionAsync();
 
@@ -285,7 +285,7 @@ namespace osu.Server.ReplayStore.Tests
         }
 
         [Fact]
-        public async Task TaskDeleteLegacyReplay_FailsIfNoScore()
+        public async Task TestDeleteLegacyReplay_FailsIfNoScore()
         {
             var response = await Client.DeleteAsync("/replays/0/1");
             Assert.False(response.IsSuccessStatusCode);
@@ -293,7 +293,7 @@ namespace osu.Server.ReplayStore.Tests
         }
 
         [Fact]
-        public async Task TaskDeleteLegacyReplay_FailsIfNoReplay()
+        public async Task TestDeleteLegacyReplay_FailsIfNoReplay()
         {
             using var db = await DatabaseAccess.GetConnectionAsync();
 
