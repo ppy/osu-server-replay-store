@@ -25,7 +25,7 @@ namespace osu.Server.ReplayStore.Tests
         public ReplayCacheControllerTest(IntegrationTestWebApplicationFactory<Program> webApplicationFactory)
             : base(webApplicationFactory)
         {
-            string tempPath = Path.GetTempPath();
+            string tempPath = Directory.CreateTempSubdirectory().FullName;
 
             string legacyReplayDirectory = Path.Combine(tempPath, $"{nameof(ReplayCacheControllerTest)}_{0}");
             string legacyReplayCacheDirectory = Path.Combine(tempPath, $"{nameof(ReplayCacheControllerTest)}_cache_{0}");
