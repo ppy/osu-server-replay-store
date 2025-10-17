@@ -33,7 +33,7 @@ namespace osu.Server.ReplayStore.Tests
             foreach (string ruleset in new[] { "osu", "taiko", "fruits", "mania" })
             {
                 string directory = string.Format(legacyReplayDirectory, ruleset);
-                string cacheDirectory = Path.Combine(legacyReplayCacheDirectory, ruleset);
+                string cacheDirectory = string.Format(legacyReplayCacheDirectory, ruleset);
 
                 Directory.CreateDirectory(directory);
                 Directory.CreateDirectory(cacheDirectory);
