@@ -53,6 +53,8 @@ namespace osu.Server.ReplayStore
             using var replayStream = replayFile.OpenReadStream();
             byte[] replayBytes = await replayStream.ReadAllRemainingBytesToArrayAsync();
 
+            replayStream.Seek(0, SeekOrigin.Begin);
+
             await replayStorage.StoreReplayAsync(scoreId, score.ruleset_id, legacyScore: false, replayStream);
             await replayCache.AddAsync(scoreId, score.ruleset_id, legacyScore: false, replayBytes);
 
@@ -86,6 +88,8 @@ namespace osu.Server.ReplayStore
 
             using var replayStream = replayFile.OpenReadStream();
             byte[] replayBytes = await replayStream.ReadAllRemainingBytesToArrayAsync();
+
+            replayStream.Seek(0, SeekOrigin.Begin);
 
             await replayStorage.StoreReplayAsync(legacyScoreId, rulesetId, legacyScore: true, replayStream);
 

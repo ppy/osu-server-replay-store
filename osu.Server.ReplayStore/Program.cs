@@ -4,7 +4,6 @@ using JetBrains.Annotations;
 using Microsoft.AspNetCore.HttpLogging;
 using osu.Server.ReplayStore.Configuration;
 using osu.Server.ReplayStore.Services;
-using StackExchange.Redis;
 using StatsdClient;
 
 namespace osu.Server.ReplayStore
@@ -119,8 +118,6 @@ namespace osu.Server.ReplayStore
                     }
                 });
             }
-
-            builder.Services.AddSingleton<IConnectionMultiplexer>(ConnectionMultiplexer.Connect(AppSettings.RedisHost));
 
             if (builder.Environment.EnvironmentName != INTEGRATION_TEST_ENVIRONMENT)
             {

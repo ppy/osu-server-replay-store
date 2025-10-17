@@ -7,10 +7,8 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using osu.Framework.Extensions;
 using osu.Server.QueueProcessor;
-using osu.Server.ReplayStore.Configuration;
 using osu.Server.ReplayStore.Services;
 using osu.Server.ReplayStore.Tests.Resources;
-using StackExchange.Redis;
 
 namespace osu.Server.ReplayStore.Tests
 {
@@ -45,10 +43,7 @@ namespace osu.Server.ReplayStore.Tests
                 Directory.CreateTempSubdirectory(nameof(ReplayCacheControllerTest)).FullName,
                 legacyReplayDirectory);
 
-            var connectionMultiplexer = ConnectionMultiplexer.Connect(AppSettings.RedisHost);
-
             replayCache = new FileReplayCache(
-                connectionMultiplexer,
                 Directory.CreateTempSubdirectory(nameof(ReplayCacheControllerTest)).FullName,
                 legacyReplayDirectory);
 
@@ -58,7 +53,6 @@ namespace osu.Server.ReplayStore.Tests
                 {
                     services.AddTransient<IReplayStorage>(_ => replayStorage);
                     services.AddTransient<IReplayCache>(_ => replayCache);
-                    services.AddSingleton<IConnectionMultiplexer>(_ => connectionMultiplexer);
                 });
             }).CreateClient();
         }
@@ -232,9 +226,12 @@ namespace osu.Server.ReplayStore.Tests
                 "INSERT INTO `scores` (`id`, `user_id`, `ruleset_id`, `beatmap_id`, `data`, `ended_at`, `has_replay`) values (1, 1, 0, 1, '{}', now(), 1);");
 
             using var stream = TestResources.GetResource(solo_replay_filename)!;
+            byte[] replayData = await stream.ReadAllRemainingBytesToArrayAsync();
+
+            stream.Seek(0, SeekOrigin.Begin);
 
             await replayStorage.StoreReplayAsync(1, 0, false, stream);
-            await replayCache.AddAsync(scoreId: 1, rulesetId: 0, legacyScore: false, await stream.ReadAllBytesToArrayAsync());
+            await replayCache.AddAsync(scoreId: 1, rulesetId: 0, legacyScore: false, replayData);
 
             var response = await Client.DeleteAsync("/replays/1");
             Assert.True(response.IsSuccessStatusCode);
@@ -273,9 +270,12 @@ namespace osu.Server.ReplayStore.Tests
                 "INSERT INTO `osu_scores_high` (`score_id`, `user_id`, `beatmap_id`, `replay`) values (1, 1, 1, 1);");
 
             using var stream = TestResources.GetResource(legacy_replay_filename)!;
+            byte[] replayData = await stream.ReadAllRemainingBytesToArrayAsync();
+
+            stream.Seek(0, SeekOrigin.Begin);
 
             await replayStorage.StoreReplayAsync(1, 0, true, stream);
-            await replayCache.AddAsync(scoreId: 1, rulesetId: 0, legacyScore: true, await stream.ReadAllBytesToArrayAsync());
+            await replayCache.AddAsync(scoreId: 1, rulesetId: 0, legacyScore: true, replayData);
 
             var response = await Client.DeleteAsync("/replays/0/1");
             Assert.True(response.IsSuccessStatusCode);

@@ -18,7 +18,7 @@ namespace osu.Server.ReplayStore.Configuration
             }
         }
 
-        public static int ReplayCacheHours => int.Parse(Environment.GetEnvironmentVariable("REPLAY_CACHE_HOURS") ?? "24");
+        public static int ReplayCacheDays => int.Parse(Environment.GetEnvironmentVariable("REPLAY_CACHE_DAYS") ?? "2");
 
         public static string LocalReplayStoragePath =>
             Environment.GetEnvironmentVariable("LOCAL_REPLAY_STORAGE_PATH")
@@ -64,10 +64,6 @@ namespace osu.Server.ReplayStore.Configuration
             Environment.GetEnvironmentVariable("S3_REPLAYS_BUCKET_REGION")
             ?? throw new InvalidOperationException("S3_REPLAYS_BUCKET_REGION environment variable not set. "
                                                    + $"Please set the value of this variable to the region in which the \"{S3ReplaysBucketName}\" bucket exists.");
-
-        public static string RedisHost => Environment.GetEnvironmentVariable("REDIS_HOST") ?? "localhost";
-
-        public static int RedisDatabase => int.Parse(Environment.GetEnvironmentVariable("REDIS_DATABASE") ?? "0");
 
         public static string? SentryDsn => Environment.GetEnvironmentVariable("SENTRY_DSN");
 
