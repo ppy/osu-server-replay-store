@@ -45,7 +45,7 @@ namespace osu.Server.ReplayStore.Tests
 
             replayCache = new FileReplayCache(
                 Directory.CreateTempSubdirectory(nameof(ReplayCacheControllerTest)).FullName,
-                legacyReplayDirectory);
+                legacyReplayCacheDirectory);
 
             Client = webApplicationFactory.WithWebHostBuilder(builder =>
             {
