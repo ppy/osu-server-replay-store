@@ -3,11 +3,9 @@
 
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Caching.Distributed;
 using MySqlConnector;
 using osu.Framework.Extensions;
 using osu.Server.QueueProcessor;
-using osu.Server.ReplayStore.Configuration;
 using osu.Server.ReplayStore.Helpers;
 using osu.Server.ReplayStore.Models.Database;
 using osu.Server.ReplayStore.Services;
@@ -21,12 +19,12 @@ namespace osu.Server.ReplayStore
         private const string content_type = "application/x-osu-replay";
 
         private readonly IReplayStorage replayStorage;
-        private readonly IDistributedCache distributedCache;
+        private readonly IReplayCache replayCache;
 
-        public ReplayStoreController(IReplayStorage replayStorage, IDistributedCache distributedCache)
+        public ReplayStoreController(IReplayStorage replayStorage, IReplayCache replayCache)
         {
             this.replayStorage = replayStorage;
-            this.distributedCache = distributedCache;
+            this.replayCache = replayCache;
         }
 
         /// <summary>
@@ -55,15 +53,10 @@ namespace osu.Server.ReplayStore
             using var replayStream = replayFile.OpenReadStream();
             byte[] replayBytes = await replayStream.ReadAllRemainingBytesToArrayAsync();
 
-            await replayStorage.StoreReplayAsync(scoreId, score.ruleset_id, legacyScore: false, replayStream);
+            replayStream.Seek(0, SeekOrigin.Begin);
 
-            await distributedCache.SetAsync(
-                getCacheKey(scoreId, score.ruleset_id, legacyScore: false),
-                replayBytes,
-                new DistributedCacheEntryOptions
-                {
-                    AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(AppSettings.ReplayCacheHours)
-                });
+            await replayStorage.StoreReplayAsync(scoreId, score.ruleset_id, legacyScore: false, replayStream);
+            await replayCache.AddAsync(scoreId, score.ruleset_id, legacyScore: false, replayBytes);
 
             DogStatsd.Increment("replays_uploaded", tags: ["type:lazer"]);
             return NoContent();
@@ -96,6 +89,8 @@ namespace osu.Server.ReplayStore
             using var replayStream = replayFile.OpenReadStream();
             byte[] replayBytes = await replayStream.ReadAllRemainingBytesToArrayAsync();
 
+            replayStream.Seek(0, SeekOrigin.Begin);
+
             await replayStorage.StoreReplayAsync(legacyScoreId, rulesetId, legacyScore: true, replayStream);
 
             Stream replayWithHeaders;
@@ -109,13 +104,11 @@ namespace osu.Server.ReplayStore
                     db);
             }
 
-            await distributedCache.SetAsync(
-                getCacheKey(legacyScoreId, rulesetId, legacyScore: true),
-                await replayWithHeaders.ReadAllRemainingBytesToArrayAsync(),
-                new DistributedCacheEntryOptions
-                {
-                    AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(AppSettings.ReplayCacheHours)
-                });
+            await replayCache.AddAsync(
+                legacyScoreId,
+                rulesetId,
+                legacyScore: true,
+                await replayWithHeaders.ReadAllRemainingBytesToArrayAsync());
 
             await replayWithHeaders.DisposeAsync();
 
@@ -147,7 +140,7 @@ namespace osu.Server.ReplayStore
 
             string fileName = createFileName(scoreId, score.beatmap_id, score.ruleset_id, legacyScore: false);
 
-            byte[]? cachedReplay = await distributedCache.GetAsync(getCacheKey(scoreId, score.ruleset_id, legacyScore: false));
+            byte[]? cachedReplay = await replayCache.FindReplayDataAsync(scoreId, score.ruleset_id, legacyScore: false);
 
             if (cachedReplay != null)
             {
@@ -191,7 +184,7 @@ namespace osu.Server.ReplayStore
 
             string fileName = createFileName(legacyScoreId, (uint)score.beatmap_id, rulesetId, legacyScore: true);
 
-            byte[]? cachedReplay = await distributedCache.GetAsync(getCacheKey(legacyScoreId, rulesetId, legacyScore: true));
+            byte[]? cachedReplay = await replayCache.FindReplayDataAsync(legacyScoreId, rulesetId, legacyScore: true);
 
             if (cachedReplay != null)
             {
@@ -242,7 +235,7 @@ namespace osu.Server.ReplayStore
                 return NotFound();
 
             await replayStorage.DeleteReplayAsync(scoreId, score.ruleset_id, legacyScore: false);
-            await distributedCache.RemoveAsync(getCacheKey(scoreId, score.ruleset_id, legacyScore: false));
+            await replayCache.RemoveAsync(scoreId, score.ruleset_id, legacyScore: false);
 
             DogStatsd.Increment("replays_deleted", tags: ["type:lazer"]);
 
@@ -273,7 +266,7 @@ namespace osu.Server.ReplayStore
                 return NotFound();
 
             await replayStorage.DeleteReplayAsync(legacyScoreId, rulesetId, legacyScore: true);
-            await distributedCache.RemoveAsync(getCacheKey(legacyScoreId, rulesetId, legacyScore: true));
+            await replayCache.RemoveAsync(legacyScoreId, rulesetId, legacyScore: true);
 
             DogStatsd.Increment("replays_deleted", tags: ["type:legacy"]);
 
@@ -309,10 +302,5 @@ namespace osu.Server.ReplayStore
 
             return $"{replayType}-{ruleset}_{beatmapId}_{scoreId}.osr";
         }
-
-        private static string getCacheKey(long scoreId, ushort rulesetId, bool legacyScore) =>
-            legacyScore
-                ? $"legacy-replay-{rulesetId}_{scoreId}"
-                : $"solo-replay-{scoreId}";
     }
 }

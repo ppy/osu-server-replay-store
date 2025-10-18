@@ -4,7 +4,6 @@
 using System.Net;
 using Dapper;
 using Microsoft.AspNetCore.TestHost;
-using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.DependencyInjection;
 using osu.Framework.Extensions;
 using osu.Server.QueueProcessor;
@@ -21,34 +20,41 @@ namespace osu.Server.ReplayStore.Tests
         protected new HttpClient Client { get; }
 
         private readonly LocalReplayStorage replayStorage;
-        private readonly IDistributedCache distributedCache;
+        private readonly FileReplayCache replayCache;
 
         public ReplayCacheControllerTest(IntegrationTestWebApplicationFactory<Program> webApplicationFactory)
             : base(webApplicationFactory)
         {
-            string tempPath = Path.GetTempPath();
+            string tempPath = Directory.CreateTempSubdirectory().FullName;
 
             string legacyReplayDirectory = Path.Combine(tempPath, $"{nameof(ReplayCacheControllerTest)}_{0}");
+            string legacyReplayCacheDirectory = Path.Combine(tempPath, $"{nameof(ReplayCacheControllerTest)}_cache_{0}");
 
             foreach (string ruleset in new[] { "osu", "taiko", "fruits", "mania" })
             {
                 string directory = string.Format(legacyReplayDirectory, ruleset);
+                string cacheDirectory = string.Format(legacyReplayCacheDirectory, ruleset);
+
                 Directory.CreateDirectory(directory);
+                Directory.CreateDirectory(cacheDirectory);
             }
 
             replayStorage = new LocalReplayStorage(
                 Directory.CreateTempSubdirectory(nameof(ReplayCacheControllerTest)).FullName,
                 legacyReplayDirectory);
 
+            replayCache = new FileReplayCache(
+                Directory.CreateTempSubdirectory($"{nameof(ReplayCacheControllerTest)}_cache").FullName,
+                legacyReplayCacheDirectory);
+
             Client = webApplicationFactory.WithWebHostBuilder(builder =>
             {
                 builder.ConfigureTestServices(services =>
                 {
                     services.AddTransient<IReplayStorage>(_ => replayStorage);
+                    services.AddTransient<IReplayCache>(_ => replayCache);
                 });
             }).CreateClient();
-
-            distributedCache = webApplicationFactory.Services.GetRequiredService<IDistributedCache>();
         }
 
         [Fact]
@@ -67,7 +73,7 @@ namespace osu.Server.ReplayStore.Tests
             var response = await Client.PutAsync("/replays/1", form);
             Assert.True(response.IsSuccessStatusCode);
 
-            byte[]? cachedReplay = await distributedCache.GetAsync("solo-replay-1");
+            byte[]? cachedReplay = await replayCache.FindReplayDataAsync(scoreId: 1, rulesetId: 0, legacyScore: false);
             Assert.NotNull(cachedReplay);
         }
 
@@ -109,7 +115,7 @@ namespace osu.Server.ReplayStore.Tests
             var response = await Client.PutAsync("/replays/0/1", form);
             Assert.True(response.IsSuccessStatusCode);
 
-            byte[]? cachedReplay = await distributedCache.GetAsync("legacy-replay-0_1");
+            byte[]? cachedReplay = await replayCache.FindReplayDataAsync(scoreId: 1, rulesetId: 0, legacyScore: true);
             Assert.NotNull(cachedReplay);
         }
 
@@ -127,7 +133,7 @@ namespace osu.Server.ReplayStore.Tests
         }
 
         [Fact]
-        public async Task TaskGetReplay_SendsReplay()
+        public async Task TestGetReplay_SendsReplay()
         {
             using var db = await DatabaseAccess.GetConnectionAsync();
 
@@ -144,7 +150,7 @@ namespace osu.Server.ReplayStore.Tests
         }
 
         [Fact]
-        public async Task TaskGetReplay_FailsIfNoScore()
+        public async Task TestGetReplay_FailsIfNoScore()
         {
             var response = await Client.GetAsync("/replays/1");
             Assert.False(response.IsSuccessStatusCode);
@@ -152,7 +158,7 @@ namespace osu.Server.ReplayStore.Tests
         }
 
         [Fact]
-        public async Task TaskGetReplay_FailsIfNoReplay()
+        public async Task TestGetReplay_FailsIfNoReplay()
         {
             using var db = await DatabaseAccess.GetConnectionAsync();
 
@@ -165,7 +171,7 @@ namespace osu.Server.ReplayStore.Tests
         }
 
         [Fact]
-        public async Task TaskGetLegacyReplay_SendsReplay()
+        public async Task TestGetLegacyReplay_SendsReplay()
         {
             using var db = await DatabaseAccess.GetConnectionAsync();
 
@@ -191,7 +197,7 @@ namespace osu.Server.ReplayStore.Tests
         }
 
         [Fact]
-        public async Task TaskGetLegacyReplay_FailsIfNoScore()
+        public async Task TestGetLegacyReplay_FailsIfNoScore()
         {
             var response = await Client.GetAsync("/replays/0/1");
             Assert.False(response.IsSuccessStatusCode);
@@ -199,7 +205,7 @@ namespace osu.Server.ReplayStore.Tests
         }
 
         [Fact]
-        public async Task TaskGetLegacyReplay_FailsIfNoReplay()
+        public async Task TestGetLegacyReplay_FailsIfNoReplay()
         {
             using var db = await DatabaseAccess.GetConnectionAsync();
 
@@ -220,19 +226,22 @@ namespace osu.Server.ReplayStore.Tests
                 "INSERT INTO `scores` (`id`, `user_id`, `ruleset_id`, `beatmap_id`, `data`, `ended_at`, `has_replay`) values (1, 1, 0, 1, '{}', now(), 1);");
 
             using var stream = TestResources.GetResource(solo_replay_filename)!;
+            byte[] replayData = await stream.ReadAllRemainingBytesToArrayAsync();
+
+            stream.Seek(0, SeekOrigin.Begin);
 
             await replayStorage.StoreReplayAsync(1, 0, false, stream);
-            await distributedCache.SetAsync("solo-replay-1", await stream.ReadAllBytesToArrayAsync());
+            await replayCache.AddAsync(scoreId: 1, rulesetId: 0, legacyScore: false, replayData);
 
             var response = await Client.DeleteAsync("/replays/1");
             Assert.True(response.IsSuccessStatusCode);
 
-            byte[]? cachedReplay = await distributedCache.GetAsync("solo-replay-1");
+            byte[]? cachedReplay = await replayCache.FindReplayDataAsync(scoreId: 1, rulesetId: 0, legacyScore: false);
             Assert.Null(cachedReplay);
         }
 
         [Fact]
-        public async Task TaskDeleteReplay_FailsIfNoScore()
+        public async Task TestDeleteReplay_FailsIfNoScore()
         {
             var response = await Client.DeleteAsync("/replays/1");
             Assert.False(response.IsSuccessStatusCode);
@@ -240,7 +249,7 @@ namespace osu.Server.ReplayStore.Tests
         }
 
         [Fact]
-        public async Task TaskDeleteReplay_FailsIfNoReplay()
+        public async Task TestDeleteReplay_FailsIfNoReplay()
         {
             using var db = await DatabaseAccess.GetConnectionAsync();
 
@@ -261,19 +270,22 @@ namespace osu.Server.ReplayStore.Tests
                 "INSERT INTO `osu_scores_high` (`score_id`, `user_id`, `beatmap_id`, `replay`) values (1, 1, 1, 1);");
 
             using var stream = TestResources.GetResource(legacy_replay_filename)!;
+            byte[] replayData = await stream.ReadAllRemainingBytesToArrayAsync();
 
-            await replayStorage.StoreReplayAsync(1, 0, false, stream);
-            await distributedCache.SetAsync("legacy-replay-0_1", await stream.ReadAllBytesToArrayAsync());
+            stream.Seek(0, SeekOrigin.Begin);
+
+            await replayStorage.StoreReplayAsync(1, 0, true, stream);
+            await replayCache.AddAsync(scoreId: 1, rulesetId: 0, legacyScore: true, replayData);
 
             var response = await Client.DeleteAsync("/replays/0/1");
             Assert.True(response.IsSuccessStatusCode);
 
-            byte[]? cachedReplay = await distributedCache.GetAsync("legacy-replay-0_1");
+            byte[]? cachedReplay = await replayCache.FindReplayDataAsync(scoreId: 1, rulesetId: 0, legacyScore: true);
             Assert.Null(cachedReplay);
         }
 
         [Fact]
-        public async Task TaskDeleteLegacyReplay_FailsIfNoScore()
+        public async Task TestDeleteLegacyReplay_FailsIfNoScore()
         {
             var response = await Client.DeleteAsync("/replays/0/1");
             Assert.False(response.IsSuccessStatusCode);
@@ -281,7 +293,7 @@ namespace osu.Server.ReplayStore.Tests
         }
 
         [Fact]
-        public async Task TaskDeleteLegacyReplay_FailsIfNoReplay()
+        public async Task TestDeleteLegacyReplay_FailsIfNoReplay()
         {
             using var db = await DatabaseAccess.GetConnectionAsync();
 

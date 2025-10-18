@@ -18,7 +18,7 @@ namespace osu.Server.ReplayStore.Configuration
             }
         }
 
-        public static int ReplayCacheHours => int.Parse(Environment.GetEnvironmentVariable("REPLAY_CACHE_HOURS") ?? "24");
+        public static int ReplayCacheDays => int.Parse(Environment.GetEnvironmentVariable("REPLAY_CACHE_DAYS") ?? "2");
 
         public static string LocalReplayStoragePath =>
             Environment.GetEnvironmentVariable("LOCAL_REPLAY_STORAGE_PATH")
@@ -29,6 +29,16 @@ namespace osu.Server.ReplayStore.Configuration
             Environment.GetEnvironmentVariable("LOCAL_LEGACY_REPLAY_STORAGE_PATH")
             ?? throw new InvalidOperationException("LOCAL_LEGACY_REPLAY_STORAGE_PATH environment variable not set. "
                                                    + "Please set the value of this variable to the path of a directory where the legacy replays should reside.");
+
+        public static string ReplayCacheStoragePath =>
+            Environment.GetEnvironmentVariable("REPLAY_CACHE_STORAGE_PATH")
+            ?? throw new InvalidOperationException("REPLAY_CACHE_STORAGE_PATH environment variable not set. "
+                                                   + "Please set the value of this variable to the path of a directory where cached replays should reside.");
+
+        public static string LegacyReplayCacheStoragePath =>
+            Environment.GetEnvironmentVariable("LEGACY_REPLAY_CACHE_STORAGE_PATH")
+            ?? throw new InvalidOperationException("LEGACY_REPLAY_CACHE_STORAGE_PATH environment variable not set. "
+                                                   + "Please set the value of this variable to the path of a directory where cached legacy replays should reside.");
 
         public static string S3AccessKey =>
             Environment.GetEnvironmentVariable("S3_ACCESS_KEY")
@@ -54,8 +64,6 @@ namespace osu.Server.ReplayStore.Configuration
             Environment.GetEnvironmentVariable("S3_REPLAYS_BUCKET_REGION")
             ?? throw new InvalidOperationException("S3_REPLAYS_BUCKET_REGION environment variable not set. "
                                                    + $"Please set the value of this variable to the region in which the \"{S3ReplaysBucketName}\" bucket exists.");
-
-        public static string RedisHost => Environment.GetEnvironmentVariable("REDIS_HOST") ?? "localhost";
 
         public static string? SentryDsn => Environment.GetEnvironmentVariable("SENTRY_DSN");
 

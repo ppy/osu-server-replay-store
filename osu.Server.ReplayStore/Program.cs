@@ -18,10 +18,6 @@ namespace osu.Server.ReplayStore
             var builder = WebApplication.CreateBuilder(args);
 
             builder.Services.AddControllers();
-            builder.Services.AddStackExchangeRedisCache(options =>
-            {
-                options.Configuration = AppSettings.RedisHost;
-            });
 
             builder.Services.AddHttpLogging(logging =>
             {
@@ -121,6 +117,12 @@ namespace osu.Server.ReplayStore
                         $@"startup:{DateTimeOffset.UtcNow.ToUnixTimeSeconds()}"
                     }
                 });
+            }
+
+            if (builder.Environment.EnvironmentName != INTEGRATION_TEST_ENVIRONMENT)
+            {
+                builder.Services.AddTransient<IReplayCache, FileReplayCache>();
+                builder.Services.AddHostedService<ExpireReplayCacheWorker>();
             }
 
             var app = builder.Build();

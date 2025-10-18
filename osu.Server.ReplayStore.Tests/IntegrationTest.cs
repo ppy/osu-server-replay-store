@@ -23,8 +23,6 @@ namespace osu.Server.ReplayStore.Tests
             cancellationSource = Debugger.IsAttached
                 ? new CancellationTokenSource()
                 : new CancellationTokenSource(20000);
-
-            emptyRedisCacheKeys();
         }
 
         private void reinitialiseDatabase()
@@ -47,22 +45,6 @@ namespace osu.Server.ReplayStore.Tests
             db.Execute("TRUNCATE TABLE `osu_replays_taiko`");
             db.Execute("TRUNCATE TABLE `osu_replays_fruits`");
             db.Execute("TRUNCATE TABLE `osu_replays_mania`");
-        }
-
-        private void emptyRedisCacheKeys()
-        {
-            using var redisConnection = RedisAccess.GetConnection();
-
-            var endpoint = redisConnection.GetEndPoints()[0];
-            var redisServer = redisConnection.GetServer(endpoint);
-
-            var database = redisConnection.GetDatabase();
-
-            foreach (var key in redisServer.Keys(pattern: "solo-replay*"))
-                database.KeyDelete(key);
-
-            foreach (var key in redisServer.Keys(pattern: "legacy-replay*"))
-                database.KeyDelete(key);
         }
 
         public virtual void Dispose()
