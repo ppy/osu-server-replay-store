@@ -27,19 +27,37 @@ namespace osu.Server.ReplayStore.Services
 
         public async Task<byte[]?> FindReplayDataAsync(long scoreId, ushort rulesetId, bool legacyScore)
         {
-            string replayPath = getPathToReplay(scoreId, rulesetId, legacyScore);
+            string baseCacheDirectory = legacyScore
+                ? string.Format(legacyBaseDirectory, LegacyRulesetHelper.GetRulesetNameFromLegacyId(rulesetId))
+                : baseDirectory;
 
-            if (!File.Exists(replayPath))
-                return null;
+            foreach (string cacheDirectory in Directory.EnumerateDirectories(baseCacheDirectory))
+            {
+                string replayPath = Path.Combine(cacheDirectory, scoreId.ToString(CultureInfo.InvariantCulture));
 
-            byte[] replayData = await File.ReadAllBytesAsync(replayPath);
+                if (File.Exists(replayPath))
+                    return await File.ReadAllBytesAsync(replayPath);
+            }
 
-            return replayData;
+            return null;
         }
 
         public Task RemoveAsync(long scoreId, ushort rulesetId, bool legacyScore)
         {
-            File.Delete(getPathToReplay(scoreId, rulesetId, legacyScore));
+            string baseCacheDirectory = legacyScore
+                ? string.Format(legacyBaseDirectory, LegacyRulesetHelper.GetRulesetNameFromLegacyId(rulesetId))
+                : baseDirectory;
+
+            foreach (string cacheDirectory in Directory.EnumerateDirectories(baseCacheDirectory))
+            {
+                string replayPath = Path.Combine(cacheDirectory, scoreId.ToString(CultureInfo.InvariantCulture));
+
+                if (File.Exists(replayPath))
+                {
+                    File.Delete(replayPath);
+                    break;
+                }
+            }
 
             return Task.CompletedTask;
         }
